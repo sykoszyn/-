@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 
+import { groupTags } from '@/domain/budgets';
 import { CATEGORIES, getCategory } from '@/domain/categories';
 import { monthLabel, monthOf } from '@/domain/dates';
 import { expenseBaseAmount } from '@/domain/ledger';
@@ -19,14 +20,20 @@ export default function Activity() {
   const group = useGroup();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string | null>(null);
+  const [tag, setTag] = useState<string | null>(null);
 
   const months = useMemo(() => {
     const q = query.trim().toLowerCase();
     const items: Item[] = [
       ...group.expenses
-        .filter((e) => (!category || e.category === category) && (!q || e.description.toLowerCase().includes(q) || getCategory(e.category).label.toLowerCase().includes(q)))
+        .filter(
+          (e) =>
+            (!category || e.category === category) &&
+            (!tag || e.tags?.includes(tag)) &&
+            (!q || e.description.toLowerCase().includes(q) || getCategory(e.category).label.toLowerCase().includes(q) || e.tags?.some((t) => t.includes(q))),
+        )
         .map((e) => ({ kind: 'expense' as const, e, date: e.date, createdAt: e.createdAt })),
-      ...(category || q ? [] : group.settlements.map((s) => ({ kind: 'settlement' as const, s, date: s.date, createdAt: s.createdAt }))),
+      ...(category || tag || q ? [] : group.settlements.map((s) => ({ kind: 'settlement' as const, s, date: s.date, createdAt: s.createdAt }))),
     ].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
     const byMonth = new Map<string, Item[]>();
     for (const item of items) {
@@ -34,7 +41,8 @@ export default function Activity() {
       byMonth.set(key, [...(byMonth.get(key) ?? []), item]);
     }
     return [...byMonth.entries()];
-  }, [group, query, category]);
+  }, [group, query, category, tag]);
+  const tags = groupTags(group);
 
   const used = new Set(group.expenses.map((e) => e.category));
 
@@ -42,13 +50,28 @@ export default function Activity() {
     <Screen title="Movimientos" right={<Button title="＋" small onPress={() => router.push('/expense/new')} />}>
       <Field placeholder="Buscar..." value={query} onChangeText={setQuery} accessibilityLabel="Buscar" />
       <HStack wrap>
-        <Chip label="Todo" selected={!category} onPress={() => setCategory(null)} />
+        <Chip
+          label="Todo"
+          selected={!category && !tag}
+          onPress={() => {
+            setCategory(null);
+            setTag(null);
+          }}
+        />
         {CATEGORIES.filter((c) => used.has(c.id)).map((c) => (
           <Chip key={c.id} label={c.label} icon={c.emoji} selected={category === c.id} onPress={() => setCategory(category === c.id ? null : c.id)} />
         ))}
       </HStack>
 
-      {months.length === 0 && <EmptyState emoji="🔎" title="Nada por acá" body={query || category ? 'Probá con otra búsqueda.' : 'Cargá el primer gasto con el botón ＋.'} />}
+      {tags.length > 0 && (
+        <HStack wrap>
+          {tags.map((t) => (
+            <Chip key={t} label={`#${t}`} selected={tag === t} onPress={() => setTag(tag === t ? null : t)} />
+          ))}
+        </HStack>
+      )}
+
+      {months.length === 0 && <EmptyState emoji="🔎" title="Nada por acá" body={query || category || tag ? 'Probá con otra búsqueda.' : 'Cargá el primer gasto con el botón ＋.'} />}
 
       {months.map(([month, items]) => {
         const total = items.reduce((a, i) => a + (i.kind === 'expense' ? expenseBaseAmount(i.e) : 0), 0);

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { budgetsForMonth } from '@/domain/budgets';
 import { currentMonth, monthLabel, relativeDays, today } from '@/domain/dates';
 import { billsForMonth, goalProgress, monthSummary } from '@/domain/insights';
 import { balances, memberById, pendingInstallments, simplifyDebts } from '@/domain/ledger';
@@ -9,6 +10,8 @@ import { formatMoney } from '@/domain/money';
 import { ExpenseRow, SettlementRow } from '@/features/expense-row';
 import { balanceHeadline, reminderMessage } from '@/features/phrases';
 import { useInvite } from '@/features/account';
+import { InstallBanner } from '@/features/install-banner';
+import { useMercadoPago } from '@/pro/mercadopago';
 import { useGroup } from '@/store';
 import { syncEnabled } from '@/sync/runtime';
 import { Avatar, EmptyState, Pill, ProgressBar, shareText } from '@/ui/bits';
@@ -33,6 +36,7 @@ export default function Home() {
       pending: pendingInstallments(group, month),
       summary: monthSummary(group, month),
       bills: billsForMonth(group, month, todayISO),
+      budgets: budgetsForMonth(group, month).filter((b) => b.state !== 'ok'),
       goals: group.goals.map((g) => goalProgress(g, group, todayISO)),
       recent: [
         ...group.expenses.map((e) => ({ kind: 'expense' as const, date: e.date, createdAt: e.createdAt, e })),
@@ -45,6 +49,7 @@ export default function Home() {
 
   const { headline, transfers } = data;
   const { invite, busy: inviting } = useInvite();
+  const mpInbox = useMercadoPago((s) => s.inbox);
   const notInvited = group.members.find((m) => m.id !== group.meId && !m.userId);
   const myIncoming = transfers.find((t) => t.to === group.meId);
   const pendingBills = data.bills.filter((b) => b.state !== 'paid');
@@ -101,7 +106,25 @@ export default function Home() {
         </HStack>
       </Card>
 
-      <Button title="Cargar gasto" icon="＋" onPress={() => router.push('/expense/new')} />
+      <HStack>
+        <Button title="Cargar gasto" icon="＋" onPress={() => router.push('/expense/new')} style={styles.flex} />
+        <Button title="Decilo" icon="🎙️" variant="secondary" onPress={() => router.push('/quick')} />
+      </HStack>
+
+      <InstallBanner />
+
+      {mpInbox.length > 0 && (
+        <Card tone="primarySoft" onPress={() => router.push('/inbox')}>
+          <HStack style={styles.between}>
+            <T bold>
+              📥 {mpInbox.length === 1 ? '1 pago' : `${mpInbox.length} pagos`} de Mercado Pago para revisar
+            </T>
+            <T variant="heading" tone="primary">
+              ›
+            </T>
+          </HStack>
+        </Card>
+      )}
 
       {syncEnabled && notInvited && (
         <Card tone="primarySoft">
@@ -139,6 +162,22 @@ export default function Home() {
             )}
           </Card>
         </Section>
+      )}
+
+      {/* Presupuestos en riesgo */}
+      {data.budgets.length > 0 && (
+        <Card onPress={() => router.push('/budgets')}>
+          <VStack gap={Space.xs}>
+            {data.budgets.slice(0, 3).map((b) => (
+              <T key={b.budget.id} tone={b.state === 'over' ? 'negative' : 'warning'} bold>
+                {b.state === 'over' ? '🚨' : '⚠️'} {b.emoji} {b.label}:{' '}
+                {b.state === 'over'
+                  ? `se pasaron por ${formatMoney(-b.remaining, group.currency)}`
+                  : `usaron el ${Math.round(b.ratio * 100)}% del presupuesto`}
+              </T>
+            ))}
+          </VStack>
+        </Card>
       )}
 
       {/* Mes */}
@@ -214,5 +253,6 @@ const styles = StyleSheet.create({
   heroActions: { marginTop: Space.sm, flexWrap: 'wrap' },
   between: { justifyContent: 'space-between' },
   mt: { marginTop: Space.sm },
+  flex: { flex: 1 },
   inviteButton: { alignSelf: 'flex-start', marginTop: Space.xs },
 });

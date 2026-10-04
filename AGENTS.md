@@ -47,6 +47,8 @@ Docs: https://docs.expo.dev/eas/index.md
 - Estado global en `src/store` (zustand + AsyncStorage). Las pantallas leen el grupo activo con `useGroup()`.
 - Toda acción del store que cambia un grupo pasa a `mutate()` la lista de filas tocadas (`[tabla, id, borrado?]`): así se sincroniza. Si sumás un campo, actualizá `src/sync/mappers.ts` y una migración nueva en `supabase/migrations/` (nunca editar una ya corrida).
 - `src/sync/engine.ts` no depende de React ni de Supabase: se prueba con `FakeServer` (`src/sync/__tests__`). Con `PAREJO_TEST_PG` también corre la prueba contra Postgres real.
+- Plan Pro: límites y precio en `src/domain/plan.ts`; en pantallas usar `usePlan(group)` y `goPro(feature)` para el paywall.
+- `api/` son funciones de Vercel (firma Web `Request`/`Response`). La lógica va en `api/_lib/core.ts` con dependencias inyectadas y tests en `api/_lib/__tests__`; nunca usar la service role key fuera de `api/`.
 - UI: usar los componentes de `src/ui` y los colores de `useTheme()`; no hardcodear colores.
 - Textos de la app en español rioplatense (vos).
 - Antes de terminar: `npm run check`.

@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
+import { budgetsForMonth, groupTags, normalizeTag, tagTotals } from '../budgets';
 import { guessCategory } from '../categories';
 import { addMonths, dueDate, monthDiff, relativeDays } from '../dates';
 import { demoGroup } from '../demo';
 import { billsForMonth, goalProgress, monthSummary } from '../insights';
+import { categoryTrends, committedInstallments, frequentPlaces, monthlyTotals, projectMonth } from '../trends';
 import { balances, installmentsOf, pendingInstallments, simplifyDebts, splitAmount } from '../ledger';
 import { allocate, formatMoney, parseAmount } from '../money';
+import { FREE_LIMITS, FREE_PLAN, monthlyEquivalent, resolvePlan, withinLimit } from '../plan';
 import type { Expense, Group, Member } from '../types';
 
 const juli: Member = { id: 'j', name: 'Juli', emoji: '🦊', color: '#000', income: 300 };
@@ -215,5 +218,117 @@ describe('insights', () => {
     expect(guessCategory('Factura de luz Edenor')).toBe('services');
     expect(guessCategory('Uber al aeropuerto')).toBe('transport');
     expect(guessCategory('qwerty')).toBeNull();
+  });
+});
+
+describe('plan', () => {
+  const now = new Date('2026-10-04T12:00:00Z');
+  it('is free with a trial available by default', () => {
+    expect(resolvePlan(null, now)).toMatchObject({ tier: 'free', canStartTrial: true });
+  });
+  it('gives 14 days of trial, once', () => {
+    const plan = resolvePlan({ trialStartedAt: '2026-10-01T12:00:00Z', proUntil: null }, now);
+    expect(plan).toMatchObject({ tier: 'trial', daysLeft: 11, canStartTrial: false });
+    expect(resolvePlan({ trialStartedAt: '2026-09-01T12:00:00Z', proUntil: null }, now)).toMatchObject({ tier: 'free', canStartTrial: false });
+  });
+  it('pro wins over trial, and an expired pro falls back to free', () => {
+    expect(resolvePlan({ trialStartedAt: '2026-10-01T12:00:00Z', proUntil: '2027-10-01T00:00:00Z' }, now)).toMatchObject({ tier: 'pro', shared: false });
+    expect(resolvePlan({ trialStartedAt: '2025-01-01T00:00:00Z', proUntil: '2026-09-01T00:00:00Z' }, now).tier).toBe('free');
+  });
+  it('is pro for both when the partner pays', () => {
+    expect(resolvePlan(null, now, '2027-01-01T00:00:00Z')).toMatchObject({ tier: 'pro', shared: true, canStartTrial: true });
+    expect(resolvePlan(null, now, '2026-01-01T00:00:00Z').tier).toBe('free');
+  });
+  it('limits the free plan only', () => {
+    expect(withinLimit(FREE_PLAN, 'budgets', FREE_LIMITS.budgets - 1)).toBe(true);
+    expect(withinLimit(FREE_PLAN, 'budgets', FREE_LIMITS.budgets)).toBe(false);
+    expect(withinLimit(resolvePlan(null, now, '2027-01-01T00:00:00Z'), 'budgets', 99)).toBe(true);
+  });
+  it('shows the monthly price like the store', () => {
+    expect(monthlyEquivalent(35)).toBe('2,92');
+  });
+});
+
+describe('budgets and tags', () => {
+  it('normalizes tags', () => {
+    expect(normalizeTag('#Vacaciones  2026 ')).toBe('vacaciones 2026');
+    expect(normalizeTag('   ')).toBe('');
+  });
+
+  it('measures each budget against the month spending, installments included', () => {
+    const g = group(
+      [
+        { amount: 30000, category: 'super' },
+        { amount: 60000, category: 'super', installments: 3, date: '2026-09-10' },
+        { amount: 5000, category: 'food', tags: ['cumple'] },
+        { amount: 1000, category: 'food', tags: ['cumple', 'sofi'] },
+      ],
+      {
+        budgets: [
+          { id: 'b1', category: 'super', amount: 40000, createdAt: 0 },
+          { id: 'b2', category: 'food', amount: 10000, createdAt: 0 },
+          { id: 'b3', category: 'travel', amount: 10000, createdAt: 0 },
+        ],
+      },
+    );
+    const status = budgetsForMonth(g, '2026-10');
+    expect(status.map((s) => [s.budget.id, s.spent, s.state])).toEqual([
+      ['b1', 50000, 'over'],
+      ['b2', 6000, 'ok'],
+      ['b3', 0, 'ok'],
+    ]);
+    expect(tagTotals(g, '2026-10')).toEqual([
+      { tag: 'cumple', amount: 6000 },
+      { tag: 'sofi', amount: 1000 },
+    ]);
+    expect(groupTags(g)).toEqual(['cumple', 'sofi']);
+  });
+});
+
+describe('trends', () => {
+  const g = group(
+    [
+      { amount: 10000, category: 'super', date: '2026-07-05' },
+      { amount: 20000, category: 'super', date: '2026-08-05' },
+      { amount: 30000, category: 'super', date: '2026-09-05' },
+      { amount: 60000, category: 'super', date: '2026-10-02' },
+      { amount: 90000, category: 'home', date: '2026-09-20', installments: 3 },
+      { amount: 50000, category: 'home', date: '2026-10-01', billId: 'rent' },
+      { amount: 4000, category: 'food', date: '2026-10-03', description: 'Café' },
+      { amount: 6000, category: 'food', date: '2026-10-04', description: 'café ' },
+    ],
+    {
+      bills: [
+        { id: 'rent', name: 'Alquiler', emoji: '🏠', amount: 50000, dueDay: 1, category: 'home', split: { mode: 'equal' }, active: true, createdAt: 0 },
+        { id: 'luz', name: 'Luz', emoji: '💡', amount: 7000, dueDay: 20, category: 'services', split: { mode: 'equal' }, active: true, createdAt: 0 },
+      ],
+    },
+  );
+
+  it('totals the last months, splitting fixed bills and old installments', () => {
+    const totals = monthlyTotals(g, '2026-10', 4);
+    expect(totals.map((t) => t.month)).toEqual(['2026-07', '2026-08', '2026-09', '2026-10']);
+    expect(totals[3]).toEqual({ month: '2026-10', total: 60000 + 30000 + 50000 + 10000, fixed: 50000, installments: 30000 });
+  });
+
+  it('projects the month end from the daily pace plus unpaid bills', () => {
+    const p = projectMonth(g, '2026-10-04');
+    expect(p.spentSoFar).toBe(150000);
+    expect(p.dailyVariable).toBe(Math.round(70000 / 4));
+    expect(p.pendingBills).toBe(7000);
+    expect(p.projected).toBe(150000 + Math.round(70000 / 4) * 27 + 7000);
+  });
+
+  it('lists installments already committed for the next months', () => {
+    expect(committedInstallments(g, '2026-10')).toEqual([{ month: '2026-11', amount: 30000 }]);
+  });
+
+  it('compares each category with its 3-month average', () => {
+    const superTrend = categoryTrends(g, '2026-10').find((c) => c.id === 'super')!;
+    expect(superTrend).toMatchObject({ amount: 60000, average: 20000, delta: 2 });
+  });
+
+  it('finds the places they go most often', () => {
+    expect(frequentPlaces(g, '2026-10')).toContainEqual({ name: 'Café', count: 2, total: 10000 });
   });
 });

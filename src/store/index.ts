@@ -5,7 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { demoGroup } from '@/domain/demo';
 import { newId } from '@/domain/id';
-import type { Bill, Expense, Goal, GoalContribution, Group, Member, Settlement } from '@/domain/types';
+import type { Bill, Budget, Expense, Goal, GoalContribution, Group, Member, Settlement } from '@/domain/types';
 import { track, type Change } from '@/sync/outbox';
 import type { Outbox } from '@/sync/types';
 
@@ -36,6 +36,13 @@ type State = {
   saveGoal: (goal: Omit<Draft<Goal>, 'contributions'> & { id?: string }) => string;
   deleteGoal: (id: string) => void;
   contribute: (goalId: string, contribution: Omit<GoalContribution, 'id'>) => void;
+
+  saveBudget: (budget: Draft<Budget> & { id?: string }) => void;
+  deleteBudget: (id: string) => void;
+
+  /** Uso del plan gratis en este dispositivo (cargas por voz del mes). */
+  usage: { month: string; voice: number };
+  countVoice: (month: string) => void;
 };
 
 export const useStore = create<State>()(
@@ -53,6 +60,9 @@ export const useStore = create<State>()(
         groups: {},
         activeGroupId: null,
         outbox: {},
+        usage: { month: '', voice: 0 },
+        countVoice: (month) =>
+          set((s) => ({ usage: { month, voice: s.usage.month === month ? s.usage.voice + 1 : 1 } })),
 
         createGroup: (data) => {
           const id = newId();
@@ -126,6 +136,17 @@ export const useStore = create<State>()(
           return goalId;
         },
         deleteGoal: (id) => mutate((g) => ({ ...g, goals: g.goals.filter((x) => x.id !== id) }), [['goals', id, true]]),
+        saveBudget: ({ id, ...data }) => {
+          const budgetId = id ?? newId();
+          mutate((g) => {
+            const list = g.budgets ?? [];
+            const existing = list.find((b) => b.id === budgetId);
+            const budget: Budget = { ...data, id: budgetId, createdAt: existing?.createdAt ?? Date.now() };
+            return { ...g, budgets: existing ? list.map((b) => (b.id === budgetId ? budget : b)) : [...list, budget] };
+          }, [['budgets', budgetId]]);
+        },
+        deleteBudget: (id) =>
+          mutate((g) => ({ ...g, budgets: (g.budgets ?? []).filter((b) => b.id !== id) }), [['budgets', id, true]]),
         contribute: (goalId, contribution) => {
           const id = newId();
           mutate(
@@ -142,7 +163,7 @@ export const useStore = create<State>()(
       name: 'parejo-v1',
       version: 2,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ groups: s.groups, activeGroupId: s.activeGroupId, outbox: s.outbox }),
+      partialize: (s) => ({ groups: s.groups, activeGroupId: s.activeGroupId, outbox: s.outbox, usage: s.usage }),
       // v1 → v2: aparece la cola de cambios para sincronizar.
       migrate: (persisted, version) => {
         const state = (persisted ?? {}) as Partial<State>;

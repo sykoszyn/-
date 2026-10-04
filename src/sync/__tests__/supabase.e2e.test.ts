@@ -104,6 +104,18 @@ describe.skipIf(!ADMIN)('Supabase de punta a punta (Postgres local)', () => {
     const received = sofi.group.expenses.find((e) => e.id === airbnb.id);
     expect(received).toMatchObject({ amount: 320_00, currency: 'USD', rate: 1250.5, installments: 3, split: { mode: 'income' } });
 
+    // Presupuestos y etiquetas.
+    const budget = { id: '7a1d2c3b-0000-4000-8000-000000000001', category: 'super', amount: 400_000_00, createdAt: Date.now() };
+    const tagged = expense(juli.group, { description: 'Pasajes', tags: ['brasil'] });
+    juli.mutate((g) => ({ ...g, budgets: [...(g.budgets ?? []), budget], expenses: [...g.expenses, tagged] }), [
+      ['budgets', budget.id],
+      ['expenses', tagged.id],
+    ]);
+    await syncAll(juli.deps);
+    await syncAll(sofi.deps);
+    expect(sofi.group.budgets).toContainEqual(expect.objectContaining({ id: budget.id, amount: 400_000_00 }));
+    expect(sofi.group.expenses.find((e) => e.id === tagged.id)?.tags).toEqual(['brasil']);
+
     // Sofi borra un gasto y salda; Juli lo ve.
     const victim = sofi.group.expenses[0];
     sofi.mutate((g) => ({ ...g, expenses: g.expenses.filter((e) => e.id !== victim.id) }), [['expenses', victim.id, true]]);

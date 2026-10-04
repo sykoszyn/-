@@ -8,6 +8,8 @@ import { memberById, splitAmount } from '@/domain/ledger';
 import { centsToInput, formatMoney, parseAmount } from '@/domain/money';
 import type { Currency, Split } from '@/domain/types';
 import { SplitPicker } from '@/features/split-picker';
+import { TagPicker } from '@/features/tag-picker';
+import { markInboxItem } from '@/pro/mercadopago';
 import { useGroup, useStore } from '@/store';
 import { Avatar, success } from '@/ui/bits';
 import { AmountInput, Button, Chip, ChipGroup, Field, Label } from '@/ui/controls';
@@ -18,24 +20,49 @@ import { Space } from '@/ui/theme';
 const INSTALLMENTS = [1, 3, 6, 9, 12, 18, 24];
 
 export default function ExpenseForm() {
-  const params = useLocalSearchParams<{ id?: string; billId?: string }>();
+  const params = useLocalSearchParams<{
+    id?: string;
+    billId?: string;
+    // Precarga desde la carga por voz o la bandeja de Mercado Pago.
+    amount?: string;
+    currency?: Currency;
+    description?: string;
+    category?: string;
+    date?: string;
+    paidBy?: string;
+    installments?: string;
+    fullFor?: string;
+    tags?: string;
+    inboxId?: string;
+  }>();
   const group = useGroup();
   const saveExpense = useStore((s) => s.saveExpense);
   const existing = params.id ? group.expenses.find((e) => e.id === params.id) : undefined;
   const bill = params.billId ? group.bills.find((b) => b.id === params.billId) : undefined;
 
   const [amountText, setAmountText] = useState(
-    existing ? centsToInput(existing.amount) : bill?.amount ? centsToInput(bill.amount) : '',
+    existing
+      ? centsToInput(existing.amount)
+      : params.amount
+        ? centsToInput(Number(params.amount))
+        : bill?.amount
+          ? centsToInput(bill.amount)
+          : '',
   );
-  const [currency, setCurrency] = useState<Currency>(existing?.currency ?? group.currency);
+  const [currency, setCurrency] = useState<Currency>(existing?.currency ?? params.currency ?? group.currency);
   const [rateText, setRateText] = useState(String(existing && existing.currency !== group.currency ? existing.rate : group.usdRate));
-  const [description, setDescription] = useState(existing?.description ?? bill?.name ?? '');
-  const [category, setCategory] = useState(existing?.category ?? bill?.category ?? '');
-  const [categoryTouched, setCategoryTouched] = useState(Boolean(existing || bill));
-  const [paidBy, setPaidBy] = useState(existing?.paidBy ?? bill?.payerId ?? group.meId);
-  const [split, setSplit] = useState<Split>(existing?.split ?? bill?.split ?? { mode: 'equal' });
-  const [installments, setInstallments] = useState(existing?.installments ?? 1);
-  const [date, setDate] = useState(existing?.date ?? today());
+  const [description, setDescription] = useState(existing?.description ?? params.description ?? bill?.name ?? '');
+  const [category, setCategory] = useState(existing?.category ?? params.category ?? bill?.category ?? guessCategory(params.description ?? '') ?? '');
+  const [categoryTouched, setCategoryTouched] = useState(Boolean(existing || bill || params.category));
+  const [paidBy, setPaidBy] = useState(
+    existing?.paidBy ?? (params.paidBy && memberById(group, params.paidBy) ? params.paidBy : undefined) ?? bill?.payerId ?? group.meId,
+  );
+  const [split, setSplit] = useState<Split>(
+    existing?.split ?? (params.fullFor && memberById(group, params.fullFor) ? { mode: 'full', memberId: params.fullFor } : undefined) ?? bill?.split ?? { mode: 'equal' },
+  );
+  const [installments, setInstallments] = useState(existing?.installments ?? (Number(params.installments) || 1));
+  const [date, setDate] = useState(existing?.date ?? params.date ?? today());
+  const [tags, setTags] = useState<string[]>(existing?.tags ?? (params.tags ? params.tags.split(',').filter(Boolean) : []));
 
   const amount = parseAmount(amountText) ?? 0;
   const rate = currency === group.currency ? 1 : Number(rateText.replace(',', '.')) || 0;
@@ -70,7 +97,9 @@ export default function ExpenseForm() {
       date,
       installments,
       billId: existing?.billId ?? bill?.id,
+      tags: tags.length ? tags : undefined,
     });
+    if (params.inboxId) markInboxItem(params.inboxId, 'added').catch(() => {});
     success();
     if (existing) router.back();
     else router.replace({ pathname: '/expense/[id]', params: { id, created: '1' } });
@@ -133,13 +162,15 @@ export default function ExpenseForm() {
 
       <VStack gap={Space.sm}>
         <Label hint="Si lo pagaron con tarjeta en cuotas, se carga una cuota por mes.">💳 ¿En cuotas?</Label>
-        <ChipGroup options={INSTALLMENTS.map((n) => ({ value: n, label: n === 1 ? 'Un pago' : `${n} cuotas` }))} value={installments} onChange={setInstallments} />
+        <ChipGroup options={[...new Set([...INSTALLMENTS, installments])].sort((a, b) => a - b).map((n) => ({ value: n, label: n === 1 ? 'Un pago' : `${n} cuotas` }))} value={installments} onChange={setInstallments} />
         {installments > 1 && amount > 0 && (
           <T variant="caption" tone="secondary">
             {installments} cuotas de {formatMoney(Math.round(baseAmount / installments), group.currency)} · la última en {monthLabel(addMonths(monthOf(validDate ? date : today()), installments - 1))}
           </T>
         )}
       </VStack>
+
+      <TagPicker group={group} value={tags} onChange={setTags} />
 
       <VStack gap={Space.sm}>
         <Label>Fecha</Label>

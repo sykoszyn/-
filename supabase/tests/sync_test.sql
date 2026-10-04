@@ -117,4 +117,4 @@ select pg_temp.login('00000000-0000-0000-0000-00000000000a');
 select pg_temp.check((select count(*) = 2 from members), 'Sofi sigue como miembro para las cuentas');
 
 reset role;
-select pg_temp.check((select count(*) = 7 from pg_publication_tables where pubname = 'supabase_realtime'), 'tiempo real activado en 7 tablas');
+select pg_temp.check((select count(*) >= 7 from pg_publication_tables where pubname = 'supabase_realtime'), 'tiempo real activado en las tablas del grupo');

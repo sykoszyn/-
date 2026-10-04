@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, type ViewProps, type ViewStyle } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewProps, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { T } from './text';
@@ -168,11 +168,11 @@ export function Row({
   );
 }
 
-export function HStack({ children, gap = Space.sm, style, wrap }: { children: ReactNode; gap?: number; style?: ViewStyle; wrap?: boolean }) {
+export function HStack({ children, gap = Space.sm, style, wrap }: { children: ReactNode; gap?: number; style?: StyleProp<ViewStyle>; wrap?: boolean }) {
   return <View style={[{ flexDirection: 'row', alignItems: 'center', gap, flexWrap: wrap ? 'wrap' : 'nowrap' }, style]}>{children}</View>;
 }
 
-export function VStack({ children, gap = Space.sm, style }: { children: ReactNode; gap?: number; style?: ViewStyle }) {
+export function VStack({ children, gap = Space.sm, style }: { children: ReactNode; gap?: number; style?: StyleProp<ViewStyle> }) {
   return <View style={[{ gap }, style]}>{children}</View>;
 }
 

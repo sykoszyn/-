@@ -102,6 +102,26 @@ describe('sync between two phones', () => {
     expect(sofi.group.goals[0].contributions.map((c) => c.id)).toContain(contribution.id);
   });
 
+  it('budgets and tags travel too', async () => {
+    const { juli, sofi } = await coupleOnline();
+    const budget = { id: newId(), category: 'super', amount: 400_000_00, createdAt: Date.now() };
+    const tagged = expense(juli.group, { description: 'Pasajes', tags: ['brasil', 'vacaciones'] });
+    juli.mutate((g) => ({ ...g, budgets: [...(g.budgets ?? []), budget], expenses: [...g.expenses, tagged] }), [
+      ['budgets', budget.id],
+      ['expenses', tagged.id],
+    ]);
+    await syncAll(juli.deps);
+    await syncAll(sofi.deps);
+    expect(sofi.group.budgets).toContainEqual(expect.objectContaining({ id: budget.id, category: 'super', amount: 400_000_00 }));
+    expect(sofi.group.budgets).toHaveLength(juli.group.budgets!.length);
+    expect(sofi.group.expenses.find((e) => e.id === tagged.id)?.tags).toEqual(['brasil', 'vacaciones']);
+
+    sofi.mutate((g) => ({ ...g, budgets: g.budgets!.filter((b) => b.id !== budget.id) }), [['budgets', budget.id, true]]);
+    await syncAll(sofi.deps);
+    await syncAll(juli.deps);
+    expect(juli.group.budgets!.some((b) => b.id === budget.id)).toBe(false);
+  });
+
   it('does not overwrite local changes that are still waiting to be uploaded', async () => {
     const { juli, sofi } = await coupleOnline();
     const target = juli.group.expenses[0];

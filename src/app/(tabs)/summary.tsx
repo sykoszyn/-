@@ -1,10 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { router } from 'expo-router';
+
+import { budgetsForMonth, tagTotals } from '@/domain/budgets';
 import { addMonths, currentMonth, monthLabel } from '@/domain/dates';
 import { monthSummary } from '@/domain/insights';
 import { formatMoney } from '@/domain/money';
+import { BudgetBars } from '@/features/budget-bars';
 import { useGroup } from '@/store';
+import { Button } from '@/ui/controls';
 import { Avatar, EmptyState, Pill, ProgressBar } from '@/ui/bits';
 import { Card, HStack, Screen, Section, VStack } from '@/ui/layout';
 import { T } from '@/ui/text';
@@ -18,6 +23,8 @@ export default function Summary() {
   const maxCategory = s.byCategory[0]?.amount ?? 1;
   const delta = s.previousTotal > 0 ? (s.total - s.previousTotal) / s.previousTotal : null;
   const isCurrent = month === currentMonth();
+  const budgets = useMemo(() => budgetsForMonth(group, month), [group, month]);
+  const tags = useMemo(() => tagTotals(group, month), [group, month]);
 
   // ¿Quién puso más de lo que le tocaba según cómo dividieron cada gasto?
   const verdict = useMemo(() => {
@@ -110,6 +117,19 @@ export default function Summary() {
             </Card>
           </Section>
 
+          <Section title="Presupuestos" action={budgets.length ? 'Editar' : undefined} href="/budgets">
+            <Card>
+              {budgets.length ? (
+                <BudgetBars statuses={budgets} currency={group.currency} />
+              ) : (
+                <VStack>
+                  <T tone="secondary">Pongan un tope por mes a lo que quieran cuidar (súper, delivery, salidas…).</T>
+                  <Button title="Crear un presupuesto" small variant="secondary" onPress={() => router.push('/budgets')} style={styles.start} />
+                </VStack>
+              )}
+            </Card>
+          </Section>
+
           <Section title="En qué se fue">
             <Card>
               <VStack gap={Space.md}>
@@ -132,6 +152,35 @@ export default function Summary() {
               </VStack>
             </Card>
           </Section>
+
+          {tags.length > 0 && (
+            <Section title="Por etiqueta">
+              <Card>
+                <VStack gap={Space.sm}>
+                  {tags.map((t) => (
+                    <HStack key={t.tag} style={styles.between}>
+                      <T>#{t.tag}</T>
+                      <T bold>{formatMoney(t.amount, group.currency)}</T>
+                    </HStack>
+                  ))}
+                </VStack>
+              </Card>
+            </Section>
+          )}
+
+          <Card tone="primarySoft" onPress={() => router.push('/insights')}>
+            <HStack style={styles.between}>
+              <View style={styles.flex}>
+                <T bold>📈 Insights detallados</T>
+                <T variant="label" tone="secondary">
+                  Tendencia de 6 meses, proyección del mes, cuotas comprometidas y más.
+                </T>
+              </View>
+              <T variant="heading" tone="primary">
+                ›
+              </T>
+            </HStack>
+          </Card>
 
           {s.biggest && (
             <Card>
@@ -161,4 +210,5 @@ const styles = StyleSheet.create({
   amount: { minWidth: 96, textAlign: 'right' },
   verdict: { padding: Space.md, borderRadius: Radius.md },
   between: { justifyContent: 'space-between' },
+  start: { alignSelf: 'flex-start' },
 });

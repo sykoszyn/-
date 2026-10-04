@@ -1,4 +1,4 @@
-import type { Bill, Currency, Expense, Goal, GoalContribution, Group, GroupKind, Member, Settlement, Split } from '@/domain/types';
+import type { Bill, Budget, Currency, Expense, Goal, GoalContribution, Group, GroupKind, Member, Settlement, Split } from '@/domain/types';
 
 import type { Row, Table } from './types';
 
@@ -30,7 +30,16 @@ export function expenseToRow(e: Expense, groupId: string): Row {
     date: e.date,
     installments: e.installments,
     bill_id: e.billId ?? null,
+    tags: e.tags ?? [],
   };
+}
+
+export function budgetToRow(b: Budget, groupId: string): Row {
+  return { id: b.id, group_id: groupId, category: b.category, amount: b.amount };
+}
+
+export function rowToBudget(r: Row): Budget {
+  return { id: r.id, category: String(r.category), amount: Number(r.amount), createdAt: time(r.created_at) };
 }
 
 export function settlementToRow(s: Settlement, groupId: string): Row {
@@ -85,6 +94,7 @@ export function rowToExpense(r: Row): Expense {
     date: String(r.date),
     installments: Number(r.installments),
     billId: opt<string>(r.bill_id),
+    tags: Array.isArray(r.tags) && r.tags.length ? (r.tags as string[]) : undefined,
     createdAt: time(r.created_at),
   };
 }
@@ -162,6 +172,10 @@ export function localRow(group: Group, table: Table, id: string): Row | null {
       const g = group.goals.find((x) => x.id === id);
       return g ? goalToRow(g, group.id) : null;
     }
+    case 'budgets': {
+      const b = (group.budgets ?? []).find((x) => x.id === id);
+      return b ? budgetToRow(b, group.id) : null;
+    }
     case 'goal_contributions':
       for (const g of group.goals) {
         const c = g.contributions.find((x) => x.id === id);
@@ -178,6 +192,7 @@ export function groupRows(group: Group): Record<Table, Row[]> {
     members: group.members.map((m) => memberToRow(m, group.id)),
     bills: group.bills.map((b) => billToRow(b, group.id)),
     goals: group.goals.map((g) => goalToRow(g, group.id)),
+    budgets: (group.budgets ?? []).map((b) => budgetToRow(b, group.id)),
     expenses: group.expenses.map((e) => expenseToRow(e, group.id)),
     settlements: group.settlements.map((s) => settlementToRow(s, group.id)),
     goal_contributions: group.goals.flatMap((g) => g.contributions.map((c) => contributionToRow(c, g.id, group.id))),

@@ -4,6 +4,7 @@ import type { Group, Split } from '@/domain/types';
 import {
   applyGroupRow,
   rowToBill,
+  rowToBudget,
   rowToContribution,
   rowToExpense,
   rowToGoal,
@@ -44,6 +45,7 @@ export function ensureUuids(group: Group): Group {
     expenses: group.expenses.map((e) => ({ ...e, id: id(e.id), paidBy: id(e.paidBy), split: split(e.split), billId: opt(e.billId) })),
     settlements: group.settlements.map((s) => ({ ...s, id: id(s.id), from: id(s.from), to: id(s.to) })),
     bills: group.bills.map((b) => ({ ...b, id: id(b.id), payerId: opt(b.payerId), split: split(b.split) })),
+    budgets: group.budgets?.map((b) => ({ ...b, id: id(b.id) })),
     goals: group.goals.map((g) => ({
       ...g,
       id: id(g.id),
@@ -119,6 +121,7 @@ export function applySnapshot(base: Group | undefined, snapshot: Snapshot, pendi
     members,
     meId: mine?.id ?? (group.meId || members[0]?.id || ''),
     bills: mergeList(group.bills, snapshot.bills, rowToBill, skip('bills')),
+    budgets: mergeList(group.budgets ?? [], snapshot.budgets, rowToBudget, skip('budgets')),
     expenses: mergeList(group.expenses, snapshot.expenses, rowToExpense, skip('expenses')),
     settlements: mergeList(group.settlements, snapshot.settlements, rowToSettlement, skip('settlements')),
     goals,

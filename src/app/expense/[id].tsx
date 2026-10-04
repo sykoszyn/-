@@ -73,6 +73,9 @@ export default function ExpenseDetail() {
           <Pill tone="neutral" label={describeSplit(expense.split, group)} />
           {expense.installments > 1 && <Pill tone="warning" label={`${expense.installments} cuotas`} />}
           {bill && <Pill tone="positive" label={`Fijo: ${bill.name}`} />}
+          {expense.tags?.map((t) => (
+            <Pill key={t} tone="primary" label={`#${t}`} />
+          ))}
         </HStack>
       </Card>
 

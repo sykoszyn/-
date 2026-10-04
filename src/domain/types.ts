@@ -52,6 +52,17 @@ export type Expense = {
   installments: number;
   /** Si el gasto salió de un fijo del mes. */
   billId?: string;
+  /** Etiquetas libres (en minúscula, sin #): "vacaciones", "casamiento"... */
+  tags?: string[];
+  createdAt: number;
+};
+
+/** Tope mensual de gasto para una categoría (lo que le corresponde al grupo, incluidas cuotas). */
+export type Budget = {
+  id: string;
+  category: string;
+  /** Centavos en la moneda del grupo. */
+  amount: number;
   createdAt: number;
 };
 
@@ -115,6 +126,7 @@ export type Group = {
   settlements: Settlement[];
   bills: Bill[];
   goals: Goal[];
+  budgets?: Budget[];
   /** Cotización de referencia del dólar (ARS por USD) para cargar gastos en dólares. */
   usdRate: number;
   createdAt: number;

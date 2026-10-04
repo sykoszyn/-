@@ -6,6 +6,9 @@ import { makeMember } from '@/domain/demo';
 import { centsToInput, formatMoney, parseAmount } from '@/domain/money';
 import type { Group, Member } from '@/domain/types';
 import { AccountCard, useInvite } from '@/features/account';
+import { ExcelButton } from '@/features/excel-button';
+import { MercadoPagoCard } from '@/features/mp-card';
+import { ProCard } from '@/features/pro-card';
 import { useGroup, useMaybeGroup, useStore } from '@/store';
 import { leaveGroup, syncEnabled } from '@/sync/runtime';
 import { Avatar, confirm, notify, Pill, shareText } from '@/ui/bits';
@@ -36,6 +39,9 @@ function SettingsBody({ group }: { group: Group }) {
           <AccountCard group={group} />
         </Section>
       )}
+
+      <ProCard group={group} />
+      <MercadoPagoCard group={group} />
 
       <Section title="Grupo">
         <Card>
@@ -118,7 +124,10 @@ function SettingsBody({ group }: { group: Group }) {
                 ? 'Este grupo se guarda en la nube. Igual podés exportar una copia cuando quieras.'
                 : 'Este grupo se guarda solo en este dispositivo. Podés exportar una copia cuando quieras.'}
             </T>
-            <Button title="Exportar copia (JSON)" variant="secondary" small onPress={() => shareText(JSON.stringify(group, null, 2))} />
+            <HStack wrap>
+              <ExcelButton group={group} />
+              <Button title="Copia técnica (JSON)" variant="ghost" small onPress={() => shareText(JSON.stringify(group, null, 2))} />
+            </HStack>
           </VStack>
         </Card>
         {group.remote ? (

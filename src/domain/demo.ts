@@ -84,10 +84,10 @@ export function demoGroup(now = new Date()): Group {
   expenses.push(
     expense('Heladera nueva', 1_440_000, me, 'home', at(2, 14), { installments: 6 }),
     expense('Súper del mes', 182_300, sofi, 'super', at(2, 5)),
-    expense('Cena aniversario 🥂', 96_000, me, 'food', at(2, 21)),
+    expense('Cena aniversario 🥂', 96_000, me, 'food', at(2, 21), { tags: ['aniversario'] }),
     expense('Súper', 164_800, me, 'super', at(1, 4)),
     expense('Farmacia', 23_400, sofi, 'health', at(1, 9)),
-    expense('Airbnb en Mendoza', 0, sofi, 'travel', at(1, 12), { amount: 32_000, currency: 'USD', rate: 1_200 }),
+    expense('Airbnb en Mendoza', 0, sofi, 'travel', at(1, 12), { amount: 32_000, currency: 'USD', rate: 1_200, tags: ['mendoza'] }),
     expense('Veterinaria de Milo', 45_000, sofi, 'pets', at(1, 17)),
     expense('Rappi', 28_900, me, 'delivery', at(1, 23)),
     expense('Zapatillas de Sofi', 160_000, me, 'other', at(1, 27), { installments: 3, split: { mode: 'full', memberId: sofi.id } }),
@@ -148,6 +148,10 @@ export function demoGroup(now = new Date()): Group {
     ],
     bills,
     goals,
+    budgets: [
+      { id: newId(), category: 'super', amount: 380_000_00, createdAt: created++ },
+      { id: newId(), category: 'outings', amount: 40_000_00, createdAt: created++ },
+    ],
     usdRate: 1_200,
     createdAt: created++,
   };

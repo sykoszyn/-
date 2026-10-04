@@ -1,11 +1,11 @@
 import type { Group, Member } from '@/domain/types';
 
 /** Tablas sincronizadas, en el orden en que hay que subirlas (por las claves foráneas). */
-export const TABLES = ['groups', 'members', 'bills', 'goals', 'expenses', 'settlements', 'goal_contributions'] as const;
+export const TABLES = ['groups', 'members', 'bills', 'goals', 'budgets', 'expenses', 'settlements', 'goal_contributions'] as const;
 export type Table = (typeof TABLES)[number];
 
 /** Tablas donde borrar es "marcar como borrado" (deleted_at), para que el borrado viaje a los otros dispositivos. */
-export const SOFT_DELETE: readonly Table[] = ['bills', 'goals', 'expenses', 'settlements'];
+export const SOFT_DELETE: readonly Table[] = ['bills', 'goals', 'budgets', 'expenses', 'settlements'];
 
 export type Row = { id: string; updated_at?: string; deleted_at?: string | null; [key: string]: unknown };
 
@@ -37,5 +37,5 @@ export interface Remote {
 }
 
 export function emptySnapshot(): Snapshot {
-  return { groups: [], members: [], bills: [], goals: [], expenses: [], settlements: [], goal_contributions: [] };
+  return { groups: [], members: [], bills: [], goals: [], budgets: [], expenses: [], settlements: [], goal_contributions: [] };
 }
