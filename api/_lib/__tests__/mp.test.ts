@@ -48,7 +48,14 @@ function deps(db: Db, mp: Deps['mp']): Deps {
     db,
     mp,
     now: () => NOW,
-    env: { appUrl: 'https://parejo.app', mpAccessToken: 'APP_TOKEN', mpClientId: 'CID', mpClientSecret: 'CSECRET', stateSecret: 's3cr3t', priceArs: 42000 },
+    env: {
+      appUrl: 'https://parejo.app',
+      mpAccessToken: 'APP_TOKEN',
+      mpClientId: 'CID',
+      mpClientSecret: 'CSECRET',
+      stateSecret: 's3cr3t',
+      priceArs: { month: 2400, year: 18000 },
+    },
   };
 }
 
@@ -68,7 +75,8 @@ const payment = (patch: Partial<MpPayment>): MpPayment => ({
 describe('mercado pago: piezas puras', () => {
   it('keeps Pro until the next charge plus grace, and respects what was paid', () => {
     expect(proUntilFor({ id: 'p', status: 'authorized', next_payment_date: '2027-10-04T00:00:00.000-03:00' }, NOW, null)).toBe('2027-10-07T03:00:00.000Z');
-    expect(proUntilFor({ id: 'p', status: 'authorized' }, NOW, null)).toBe('2027-10-04T12:00:00.000Z');
+    expect(proUntilFor({ id: 'p', status: 'authorized', auto_recurring: { frequency: 12, frequency_type: 'months' } }, NOW, null)).toBe('2027-10-05T12:00:00.000Z');
+    expect(proUntilFor({ id: 'p', status: 'authorized', auto_recurring: { frequency: 1, frequency_type: 'months' } }, NOW, null)).toBe('2026-11-04T12:00:00.000Z');
     expect(proUntilFor({ id: 'p', status: 'cancelled' }, NOW, '2027-01-01T00:00:00.000Z')).toBeNull();
     expect(proUntilFor({ id: 'p', status: 'authorized', next_payment_date: '2026-11-01T00:00:00Z' }, NOW, '2027-12-31T00:00:00.000Z')).toBe('2027-12-31T00:00:00.000Z');
   });
@@ -111,16 +119,26 @@ describe('mercado pago: piezas puras', () => {
 });
 
 describe('mercado pago: flujos', () => {
-  it('creates the yearly subscription with the server price', async () => {
+  it('creates monthly or yearly subscriptions with the server prices', async () => {
     const { db } = fakeDb();
     const { mp, calls } = fakeMp({ '/preapproval': { id: 'pre1', init_point: 'https://mp/checkout' } });
-    expect(await createSubscription(deps(db, mp), { id: ANA, email: 'ana@x.com' })).toBe('https://mp/checkout');
+    const d = deps(db, mp);
+    expect(await createSubscription(d, { id: ANA, email: 'ana@x.com' }, 'year')).toBe('https://mp/checkout');
     expect(calls[0]).toMatchObject({
       path: '/preapproval',
       method: 'POST',
       token: 'APP_TOKEN',
-      body: { external_reference: ANA, payer_email: 'ana@x.com', auto_recurring: { frequency: 12, frequency_type: 'months', transaction_amount: 42000, currency_id: 'ARS' } },
+      body: {
+        reason: 'Parejo Plus · anual',
+        external_reference: ANA,
+        payer_email: 'ana@x.com',
+        auto_recurring: { frequency: 12, frequency_type: 'months', transaction_amount: 18000, currency_id: 'ARS' },
+        back_url: 'https://parejo.app/plus?status=ok',
+      },
     });
+    await createSubscription(d, { id: ANA, email: 'ana@x.com' }, 'month');
+    expect(calls[1].body).toMatchObject({ reason: 'Parejo Plus · mensual', auto_recurring: { frequency: 1, transaction_amount: 2400 } });
+    await expect(createSubscription(d, { id: ANA, email: 'ana@x.com' }, 'semana')).rejects.toThrow(/mensual o anual/);
   });
 
   it('activates Pro only after asking Mercado Pago itself', async () => {

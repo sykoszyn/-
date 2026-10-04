@@ -9,7 +9,7 @@ import { centsToInput, formatMoney, parseAmount } from '@/domain/money';
 import type { Currency, Split } from '@/domain/types';
 import { SplitPicker } from '@/features/split-picker';
 import { TagPicker } from '@/features/tag-picker';
-import { markInboxItem } from '@/pro/mercadopago';
+import { markInboxItem } from '@/plus/mercadopago';
 import { useGroup, useStore } from '@/store';
 import { Avatar, success } from '@/ui/bits';
 import { AmountInput, Button, Chip, ChipGroup, Field, Label } from '@/ui/controls';

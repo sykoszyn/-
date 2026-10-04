@@ -2,11 +2,11 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { isPro } from '@/domain/plan';
+import { hasPlus } from '@/domain/plan';
 import type { Group } from '@/domain/types';
-import { usePlan } from '@/pro/client';
-import { goPro } from '@/pro/gate';
-import { connectMercadoPago, disconnectMercadoPago, refreshMercadoPago, syncMercadoPago, useMercadoPago } from '@/pro/mercadopago';
+import { usePlan } from '@/plus/client';
+import { goPlus } from '@/plus/gate';
+import { connectMercadoPago, disconnectMercadoPago, refreshMercadoPago, syncMercadoPago, useMercadoPago } from '@/plus/mercadopago';
 import { syncEnabled, useSync } from '@/sync/runtime';
 import { confirm, notify, Pill } from '@/ui/bits';
 import { Button } from '@/ui/controls';
@@ -56,14 +56,14 @@ export function MercadoPagoCard({ group }: { group: Group }) {
             <T bold>💸 Mercado Pago</T>
             <T variant="label" tone="secondary">
               {connected
-                ? `Tus pagos entran solos a la bandeja${lastSyncedAt ? ` · última vez ${new Date(lastSyncedAt).toLocaleDateString('es-AR')}` : ''}.`
-                : 'Conectá tu cuenta y tus pagos entran solos: los revisás y se cargan en un toque.'}
+                ? `Tus pagos aparecen solos en la bandeja${lastSyncedAt ? ` · última vez ${new Date(lastSyncedAt).toLocaleDateString('es-AR')}` : ''}.`
+                : 'Conectá tu cuenta: tus pagos aparecen en una bandeja y elegís cuáles son compartidos.'}
             </T>
           </View>
-          {connected ? <Pill tone="positive" label="Conectado" /> : !isPro(plan) && <Pill tone="primary" label="Pro" />}
+          {connected ? <Pill tone="positive" label="Conectado" /> : !hasPlus(plan) && <Pill tone="primary" label="Plus" />}
         </HStack>
-        {!isPro(plan) ? (
-          <Button title="Ver Parejo Pro" small variant="secondary" onPress={() => goPro('mercadopago')} />
+        {!hasPlus(plan) ? (
+          <Button title="Ver Parejo Plus" small variant="secondary" onPress={() => goPlus('mercadopago')} />
         ) : connected ? (
           <HStack wrap>
             <Button title="Traer pagos ahora" small loading={busy === 'sync'} onPress={() => run('sync')} />

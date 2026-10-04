@@ -7,8 +7,8 @@ import { currentMonth, monthLabel } from '@/domain/dates';
 import { centsToInput, formatMoney, parseAmount } from '@/domain/money';
 import { FREE_LIMITS, withinLimit } from '@/domain/plan';
 import { BudgetBars } from '@/features/budget-bars';
-import { usePlan } from '@/pro/client';
-import { goPro } from '@/pro/gate';
+import { usePlan } from '@/plus/client';
+import { goPlus } from '@/plus/gate';
 import { useGroup, useStore } from '@/store';
 import { confirm, EmptyState } from '@/ui/bits';
 import { Button, ChipGroup, Field, Label } from '@/ui/controls';
@@ -37,7 +37,7 @@ export default function Budgets() {
 
   const save = () => {
     if (!category || amount <= 0) return;
-    if (!existing && !withinLimit(plan, 'budgets', budgets.length)) return goPro('budgets');
+    if (!existing && !withinLimit(plan, 'budgets', budgets.length)) return goPlus('budgets');
     saveBudget({ id: existing?.id, category, amount });
     setCategory(undefined);
     setAmountText('');
@@ -83,7 +83,7 @@ export default function Budgets() {
             {plan.tier === 'free' && (
               <View>
                 <T variant="caption" tone="secondary">
-                  Plan gratis: hasta {FREE_LIMITS.budgets} presupuestos ({budgets.length} usados). Con Pro, sin tope.
+                  Plan gratis: hasta {FREE_LIMITS.budgets} presupuestos ({budgets.length} usados). Con Plus, todos los que quieran.
                 </T>
               </View>
             )}

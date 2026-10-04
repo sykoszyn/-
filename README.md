@@ -14,7 +14,7 @@ App de finanzas compartidas para parejas (y deptos y viajes). Hace lo que hace K
 - ☁️ **Juntos de verdad:** cuenta con código por email, invitación por link y sincronización en tiempo real (Supabase). Funciona sin conexión.
 - 🎙️ **Carga por voz:** “15 lucas en el súper, pagó Sofi, en 3 cuotas”.
 - 🏷️ **Etiquetas y presupuestos** por categoría, con avisos cuando se acercan al tope.
-- ⭐ **Parejo Pro** (USD 35/año, 14 días gratis, Pro para los dos): Mercado Pago con pagos que entran solos, voz sin límite, insights detallados y exportación a Excel.
+- 💞 **Parejo Plus**, una suscripción para todo el grupo (USD 1,99/mes o USD 14,99/año, primer mes gratis): Mercado Pago conectado, dictado ilimitado, proyecciones y tendencias, y Excel.
 - 📲 **Web instalable (PWA)** lista para Vercel, mientras llega a las tiendas.
 
 Una sola base de código para **web, Android e iOS** (Expo + React Native + Expo Router).
@@ -26,7 +26,7 @@ Una sola base de código para **web, Android e iOS** (Expo + React Native + Expo
   <img src="docs/capturas/resumen.png" width="200" alt="Resumen del mes" />
 </p>
 
-📄 Producto: [`docs/PRODUCTO.md`](docs/PRODUCTO.md) · ☁️ Sincronización: [`docs/SINCRONIZACION.md`](docs/SINCRONIZACION.md) · 🌐 Vercel, Pro y Mercado Pago: [`docs/VERCEL_Y_PRO.md`](docs/VERCEL_Y_PRO.md) · 🚀 Tiendas: [`docs/PUBLICAR.md`](docs/PUBLICAR.md)
+📄 Producto: [`docs/PRODUCTO.md`](docs/PRODUCTO.md) · ☁️ Sincronización: [`docs/SINCRONIZACION.md`](docs/SINCRONIZACION.md) · 🌐 Vercel, Plus y Mercado Pago: [`docs/VERCEL_Y_PLUS.md`](docs/VERCEL_Y_PLUS.md) · 🚀 Tiendas: [`docs/PUBLICAR.md`](docs/PUBLICAR.md)
 
 ## Correrla
 
@@ -63,14 +63,14 @@ src/
     join/         Unirse a un grupo con una invitación
     quick.tsx     Carga por voz o texto
     budgets.tsx   Presupuestos
-    insights.tsx  Insights detallados (Pro)
+    insights.tsx  Proyecciones y tendencias (Plus)
     inbox.tsx     Pagos de Mercado Pago para revisar
-    pro.tsx       Parejo Pro
+    plus.tsx      Parejo Plus
     onboarding.tsx
   domain/         Lógica pura y testeada: tipos, plata, fechas, reparto, cuotas, saldos, resúmenes
   store/          Estado de la app (zustand) guardado en el dispositivo
   sync/           Sincronización: motor, cola de cambios, conexión a Supabase, login e invitaciones
-  pro/            Plan Pro (prueba, límites, checkout) y bandeja de Mercado Pago
+  plus/           Parejo Plus (prueba, límites, checkout) y bandeja de Mercado Pago
   features/       Componentes con lógica de negocio (selector de división, filas de gastos, textos)
   ui/             Sistema de diseño: tema claro/oscuro, textos, tarjetas, botones, chips
 api/              Funciones de Vercel: suscripción, webhook y conexión con Mercado Pago

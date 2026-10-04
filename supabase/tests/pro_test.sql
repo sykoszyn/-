@@ -107,3 +107,10 @@ reset role;
 select pg_temp.check(is_pro('00000000-0000-0000-0000-0000000000b1'), 'el servidor ve que Beto tiene Pro (prueba)');
 select pg_temp.check(is_pro('00000000-0000-0000-0000-0000000000a1'), 'y Ana también, por el grupo');
 select pg_temp.check(not is_pro('00000000-0000-0000-0000-0000000000c1'), 'el otro usuario no');
+
+-- La prueba dura un mes (migración 004).
+update profiles set trial_started_at = now() - interval '20 days' where user_id = '00000000-0000-0000-0000-0000000000b1';
+select pg_temp.check(is_pro('00000000-0000-0000-0000-0000000000b1'), 'a los 20 días la prueba sigue activa');
+update profiles set trial_started_at = now() - interval '31 days' where user_id = '00000000-0000-0000-0000-0000000000b1';
+select pg_temp.check(not is_pro('00000000-0000-0000-0000-0000000000b1'), 'a los 31 días la prueba terminó');
+select pg_temp.check(not is_pro('00000000-0000-0000-0000-0000000000a1'), 'y el grupo vuelve al plan gratis');

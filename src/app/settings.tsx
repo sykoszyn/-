@@ -8,7 +8,7 @@ import type { Group, Member } from '@/domain/types';
 import { AccountCard, useInvite } from '@/features/account';
 import { ExcelButton } from '@/features/excel-button';
 import { MercadoPagoCard } from '@/features/mp-card';
-import { ProCard } from '@/features/pro-card';
+import { PlusCard } from '@/features/plus-card';
 import { useGroup, useMaybeGroup, useStore } from '@/store';
 import { leaveGroup, syncEnabled } from '@/sync/runtime';
 import { Avatar, confirm, notify, Pill, shareText } from '@/ui/bits';
@@ -40,7 +40,7 @@ function SettingsBody({ group }: { group: Group }) {
         </Section>
       )}
 
-      <ProCard group={group} />
+      <PlusCard group={group} />
       <MercadoPagoCard group={group} />
 
       <Section title="Grupo">

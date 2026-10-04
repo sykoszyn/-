@@ -8,7 +8,7 @@ import { billsForMonth, goalProgress, monthSummary } from '../insights';
 import { categoryTrends, committedInstallments, frequentPlaces, monthlyTotals, projectMonth } from '../trends';
 import { balances, installmentsOf, pendingInstallments, simplifyDebts, splitAmount } from '../ledger';
 import { allocate, formatMoney, parseAmount } from '../money';
-import { FREE_LIMITS, FREE_PLAN, monthlyEquivalent, resolvePlan, withinLimit } from '../plan';
+import { FREE_LIMITS, FREE_PLAN, PLUS, resolvePlan, usd, withinLimit, yearlyDeal } from '../plan';
 import type { Expense, Group, Member } from '../types';
 
 const juli: Member = { id: 'j', name: 'Juli', emoji: '🦊', color: '#000', income: 300 };
@@ -226,17 +226,17 @@ describe('plan', () => {
   it('is free with a trial available by default', () => {
     expect(resolvePlan(null, now)).toMatchObject({ tier: 'free', canStartTrial: true });
   });
-  it('gives 14 days of trial, once', () => {
-    const plan = resolvePlan({ trialStartedAt: '2026-10-01T12:00:00Z', proUntil: null }, now);
-    expect(plan).toMatchObject({ tier: 'trial', daysLeft: 11, canStartTrial: false });
+  it('gives one free month, once', () => {
+    const plan = resolvePlan({ trialStartedAt: '2026-09-20T12:00:00Z', proUntil: null }, now);
+    expect(plan).toMatchObject({ tier: 'trial', daysLeft: 16, canStartTrial: false });
     expect(resolvePlan({ trialStartedAt: '2026-09-01T12:00:00Z', proUntil: null }, now)).toMatchObject({ tier: 'free', canStartTrial: false });
   });
-  it('pro wins over trial, and an expired pro falls back to free', () => {
-    expect(resolvePlan({ trialStartedAt: '2026-10-01T12:00:00Z', proUntil: '2027-10-01T00:00:00Z' }, now)).toMatchObject({ tier: 'pro', shared: false });
+  it('a paid plan wins over the trial, and an expired one falls back to free', () => {
+    expect(resolvePlan({ trialStartedAt: '2026-10-01T12:00:00Z', proUntil: '2027-10-01T00:00:00Z' }, now)).toMatchObject({ tier: 'plus', shared: false });
     expect(resolvePlan({ trialStartedAt: '2025-01-01T00:00:00Z', proUntil: '2026-09-01T00:00:00Z' }, now).tier).toBe('free');
   });
-  it('is pro for both when the partner pays', () => {
-    expect(resolvePlan(null, now, '2027-01-01T00:00:00Z')).toMatchObject({ tier: 'pro', shared: true, canStartTrial: true });
+  it('one subscription covers the whole group', () => {
+    expect(resolvePlan(null, now, '2027-01-01T00:00:00Z')).toMatchObject({ tier: 'plus', shared: true, canStartTrial: true });
     expect(resolvePlan(null, now, '2026-01-01T00:00:00Z').tier).toBe('free');
   });
   it('limits the free plan only', () => {
@@ -244,8 +244,9 @@ describe('plan', () => {
     expect(withinLimit(FREE_PLAN, 'budgets', FREE_LIMITS.budgets)).toBe(false);
     expect(withinLimit(resolvePlan(null, now, '2027-01-01T00:00:00Z'), 'budgets', 99)).toBe(true);
   });
-  it('shows the monthly price like the store', () => {
-    expect(monthlyEquivalent(35)).toBe('2,92');
+  it('shows prices the Argentine way, and the yearly deal', () => {
+    expect(usd(PLUS.prices.month)).toBe('1,99');
+    expect(yearlyDeal()).toEqual({ perMonth: '1,25', savingPercent: 37 });
   });
 });
 

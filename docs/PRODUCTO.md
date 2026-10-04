@@ -52,11 +52,11 @@ Todo lo de arriba está implementado y funcionando en web, iOS y Android desde u
 - ✅ Sincronización en tiempo real con soporte offline.
 - Pendiente: entrar con Google/Apple, links que abran la app instalada y notificaciones push (“Sofi cargó Súper $45.000”, “Mañana vence la luz”, “Ya pueden saldar el mes”).
 
-### Pro y web instalable ✅
-- ✅ Parejo Pro (USD 35/año, 14 días gratis sin tarjeta, Pro para los dos) con cobro por Mercado Pago.
+### Plus y web instalable ✅
+- ✅ Parejo Plus: una suscripción para todo el grupo, USD 1,99/mes o USD 14,99/año, primer mes gratis sin tarjeta, cobro por Mercado Pago.
 - ✅ Mercado Pago: conectar la cuenta y revisar los pagos en una bandeja.
 - ✅ Carga por voz y texto natural, etiquetas, presupuestos, insights detallados y exportación a Excel.
-- ✅ Web instalable (PWA) en Vercel. Ver [`VERCEL_Y_PRO.md`](VERCEL_Y_PRO.md).
+- ✅ Web instalable (PWA) en Vercel. Ver [`VERCEL_Y_PLUS.md`](VERCEL_Y_PLUS.md).
 
 ### Fase 3 — Lo que nos hace distintos
 - **Cotización automática** del dólar (blue/MEP/tarjeta) al cargar en USD.
@@ -67,7 +67,7 @@ Todo lo de arriba está implementado y funcionando en web, iOS y Android desde u
 - Widgets de inicio (saldo y próximo vencimiento) y atajos.
 
 ### Fase 4 — Crecimiento
-- Sumar a Pro: foto del ticket con IA, importación del resumen de la tarjeta, temas.
+- Sumar a Plus: foto del ticket con IA, importación del resumen de la tarjeta, temas.
 - Gratis para siempre: grupos, gastos, saldos, cuotas y fijos básicos.
 - Modo viaje con varias monedas y deudas entre muchos.
 

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { AppState, Linking, Platform } from 'react-native';
 import { create } from 'zustand';
 
-import { FREE_PLAN, resolvePlan, type Plan, type Profile } from '@/domain/plan';
+import { FREE_PLAN, resolvePlan, type BillingPeriod, type Plan, type Profile } from '@/domain/plan';
 import type { Group } from '@/domain/types';
 import { supabase } from '@/sync/supabase';
 import { useSync } from '@/sync/runtime';
@@ -12,7 +12,7 @@ import { refreshMercadoPago } from './mercadopago';
 
 type PlanState = {
   profile: Profile | null;
-  /** Por grupo: hasta cuándo tiene Pro gracias a otra persona del grupo. */
+  /** Por grupo: hasta cuándo tiene Plus gracias a otra persona del grupo. */
   groupUntil: Record<string, string>;
   loaded: boolean;
 };
@@ -41,9 +41,9 @@ export async function startTrial(): Promise<void> {
   await refreshPlan();
 }
 
-/** Abre el checkout de Mercado Pago para la suscripción anual. */
-export async function subscribe(): Promise<void> {
-  const { url } = await callApi<{ url: string }>('/api/mp/subscribe');
+/** Abre el checkout de Mercado Pago para la suscripción (mensual o anual). */
+export async function subscribe(period: BillingPeriod): Promise<void> {
+  const { url } = await callApi<{ url: string }>('/api/mp/subscribe', { period });
   if (Platform.OS === 'web') window.location.href = url;
   else await Linking.openURL(url);
 }

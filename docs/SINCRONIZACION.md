@@ -16,7 +16,7 @@ Código: `src/sync/` (motor en `engine.ts`, conexión en `remote-supabase.ts`, e
 
 ## Puesta en marcha (una sola vez)
 
-1. **Correr las migraciones que faltan, en orden.** En Supabase → *SQL Editor*, pegá y corré [`002_sync.sql`](../supabase/migrations/002_sync.sql) y después [`003_pro.sql`](../supabase/migrations/003_pro.sql). (La 001 ya la corriste: era el `schema.sql`.) Se pueden correr más de una vez sin problema.
+1. **Correr las migraciones que faltan, en orden.** En Supabase → *SQL Editor*, pegá y corré [`002_sync.sql`](../supabase/migrations/002_sync.sql), [`003_pro.sql`](../supabase/migrations/003_pro.sql) y [`004_plus.sql`](../supabase/migrations/004_plus.sql). (La 001 ya la corriste: era el `schema.sql`.) Se pueden correr más de una vez sin problema.
 
 2. **Login con código por email.** En *Authentication → Emails* (plantillas), editá **Magic Link** y **Confirm signup** para que incluyan el código, por ejemplo:
 

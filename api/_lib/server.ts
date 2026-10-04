@@ -66,7 +66,7 @@ export function deps(): Deps {
       mpClientId: env('MP_CLIENT_ID'),
       mpClientSecret: env('MP_CLIENT_SECRET'),
       stateSecret: env('APP_SECRET') || env('SUPABASE_SERVICE_ROLE_KEY'),
-      priceArs: Number(env('PRO_PRICE_ARS')) || 0,
+      priceArs: { month: Number(env('PLUS_PRICE_ARS_MONTH')) || 0, year: Number(env('PLUS_PRICE_ARS_YEAR')) || 0 },
     },
   };
 }

@@ -4,8 +4,8 @@ import { View } from 'react-native';
 import { groupTags, normalizeTag } from '@/domain/budgets';
 import { FREE_LIMITS, withinLimit } from '@/domain/plan';
 import type { Group } from '@/domain/types';
-import { usePlan } from '@/pro/client';
-import { goPro } from '@/pro/gate';
+import { usePlan } from '@/plus/client';
+import { goPlus } from '@/plus/gate';
 import { Button, Chip, Field, Label } from '@/ui/controls';
 import { HStack, VStack } from '@/ui/layout';
 import { T } from '@/ui/text';
@@ -23,7 +23,7 @@ export function TagPicker({ group, value, onChange }: { group: Group; value: str
     const tag = normalizeTag(draft);
     if (!tag) return;
     if (!all.includes(tag) && !withinLimit(plan, 'tags', all.length)) {
-      goPro('tags');
+      goPlus('tags');
       return;
     }
     if (!value.includes(tag)) onChange([...value, tag]);
@@ -48,7 +48,7 @@ export function TagPicker({ group, value, onChange }: { group: Group; value: str
       </HStack>
       {plan.tier === 'free' && all.length >= FREE_LIMITS.tags && (
         <T variant="caption" tone="secondary">
-          Usaron las {FREE_LIMITS.tags} etiquetas del plan gratis. Con Pro no hay tope.
+          Usaron las {FREE_LIMITS.tags} etiquetas del plan gratis. Con Plus, todas las que quieran.
         </T>
       )}
     </VStack>

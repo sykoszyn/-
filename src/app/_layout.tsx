@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useHydrated } from '@/store';
-import { PlanManager } from '@/pro/client';
+import { PlanManager } from '@/plus/client';
 import { SyncManager } from '@/sync/runtime';
 import { Colors } from '@/ui/theme';
 
@@ -52,7 +52,7 @@ export default function RootLayout() {
         <Stack.Screen name="login" options={{ presentation: 'modal', title: 'Entrar' }} />
         <Stack.Screen name="join/index" options={{ title: 'Unirme a un grupo' }} />
         <Stack.Screen name="join/[code]" options={{ title: 'Invitación' }} />
-        <Stack.Screen name="pro" options={{ presentation: 'modal', title: 'Parejo Pro' }} />
+        <Stack.Screen name="plus" options={{ presentation: 'modal', title: 'Parejo Plus' }} />
         <Stack.Screen name="budgets" options={{ title: 'Presupuestos' }} />
         <Stack.Screen name="quick" options={{ presentation: 'modal', title: 'Carga rápida' }} />
         <Stack.Screen name="insights" options={{ title: 'Insights' }} />

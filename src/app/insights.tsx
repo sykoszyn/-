@@ -4,12 +4,12 @@ import { StyleSheet, View } from 'react-native';
 import { tagTotals } from '@/domain/budgets';
 import { currentMonth, monthLabel, today } from '@/domain/dates';
 import { formatMoney } from '@/domain/money';
-import { isPro, PRO } from '@/domain/plan';
+import { hasPlus } from '@/domain/plan';
 import { categoryTrends, committedInstallments, frequentPlaces, monthlyTotals, projectMonth } from '@/domain/trends';
 import { ExcelButton } from '@/features/excel-button';
 import { HBar, MonthBars } from '@/features/month-bars';
-import { usePlan } from '@/pro/client';
-import { goPro } from '@/pro/gate';
+import { usePlan } from '@/plus/client';
+import { goPlus } from '@/plus/gate';
 import { useGroup } from '@/store';
 import { Pill } from '@/ui/bits';
 import { Button } from '@/ui/controls';
@@ -20,7 +20,7 @@ import { Space } from '@/ui/theme';
 export default function Insights() {
   const group = useGroup();
   const plan = usePlan(group);
-  const pro = isPro(plan);
+  const pro = hasPlus(plan);
   const month = currentMonth();
   const todayISO = today();
   const [selected, setSelected] = useState(month);
@@ -69,7 +69,7 @@ export default function Insights() {
       {!pro ? (
         <Card tone="primarySoft">
           <VStack gap={Space.md}>
-            <T variant="heading">🔒 Lo demás es Pro</T>
+            <T variant="heading">✨ El resto viene con Plus</T>
             <VStack gap={4}>
               <T>📅 Cómo terminan el mes si siguen a este ritmo</T>
               <T>💳 Cuánto tienen comprometido en cuotas los próximos meses</T>
@@ -78,7 +78,7 @@ export default function Insights() {
               <T>🏷️ Totales por etiqueta</T>
               <T>📥 Exportar todo a Excel</T>
             </VStack>
-            <Button title={plan.canStartTrial ? `Probar ${PRO.trialDays} días gratis` : 'Ver Parejo Pro'} onPress={() => goPro('insights')} />
+            <Button title={plan.canStartTrial ? 'Probar un mes gratis' : 'Ver Parejo Plus'} onPress={() => goPlus('insights')} />
           </VStack>
         </Card>
       ) : (

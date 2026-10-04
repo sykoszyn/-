@@ -9,6 +9,7 @@ import {
   type MpFetch,
   type MpPayment,
   type OAuthToken,
+  type Period,
   type Preapproval,
 } from './mp';
 
@@ -39,7 +40,8 @@ export type Env = {
   mpClientId: string;
   mpClientSecret: string;
   stateSecret: string;
-  priceArs: number;
+  /** Precio en pesos de cada opción (lo que cobra Mercado Pago). */
+  priceArs: Record<Period, number>;
 };
 
 export type Deps = { db: Db; mp: MpFetch; env: Env; now?: () => Date };
@@ -55,14 +57,16 @@ export class HttpError extends Error {
 
 const now = (d: Deps) => (d.now ? d.now() : new Date());
 
-/** Crea la suscripción anual en Mercado Pago y devuelve el link de pago. */
-export async function createSubscription(d: Deps, user: { id: string; email: string | null }): Promise<string> {
+/** Crea la suscripción (mensual o anual) en Mercado Pago y devuelve el link de pago. */
+export async function createSubscription(d: Deps, user: { id: string; email: string | null }, period: unknown): Promise<string> {
+  if (period !== 'month' && period !== 'year') throw new HttpError(400, 'Elegí mensual o anual');
   if (!user.email) throw new HttpError(400, 'Tu cuenta no tiene email');
-  if (!d.env.mpAccessToken || !d.env.priceArs) throw new HttpError(503, 'Los pagos todavía no están configurados');
+  const priceArs = d.env.priceArs[period];
+  if (!d.env.mpAccessToken || !priceArs) throw new HttpError(503, 'Los pagos todavía no están configurados');
   const pre = (await d.mp('/preapproval', {
     method: 'POST',
     token: d.env.mpAccessToken,
-    body: preapprovalBody({ userId: user.id, email: user.email, priceArs: d.env.priceArs, appUrl: d.env.appUrl }),
+    body: preapprovalBody({ userId: user.id, email: user.email, period, priceArs, appUrl: d.env.appUrl }),
   })) as { init_point?: string };
   if (!pre.init_point) throw new HttpError(502, 'Mercado Pago no devolvió el link de pago');
   return pre.init_point;
@@ -92,7 +96,7 @@ export async function handleSubscriptionWebhook(d: Deps, type: string, dataId: s
 
 export async function connectUrl(d: Deps, userId: string): Promise<string> {
   if (!d.env.mpClientId) throw new HttpError(503, 'La conexión con Mercado Pago todavía no está configurada');
-  if (!(await d.db.isPro(userId))) throw new HttpError(402, 'La integración con Mercado Pago es parte de Parejo Pro');
+  if (!(await d.db.isPro(userId))) throw new HttpError(402, 'La conexión con Mercado Pago viene con Parejo Plus');
   return authorizeUrl({ clientId: d.env.mpClientId, redirectUri: `${d.env.appUrl}/api/mp/callback`, state: signState(userId, d.env.stateSecret, now(d).getTime()) });
 }
 
@@ -149,13 +153,13 @@ export async function syncAccount(d: Deps, acc: MpAccount): Promise<number> {
 }
 
 export async function syncUser(d: Deps, userId: string): Promise<number> {
-  if (!(await d.db.isPro(userId))) throw new HttpError(402, 'La integración con Mercado Pago es parte de Parejo Pro');
+  if (!(await d.db.isPro(userId))) throw new HttpError(402, 'La conexión con Mercado Pago viene con Parejo Plus');
   const acc = await d.db.getMpAccount(userId);
   if (!acc) throw new HttpError(404, 'No tenés Mercado Pago conectado');
   return syncAccount(d, acc);
 }
 
-/** Para el cron diario: sincroniza todas las cuentas conectadas de quienes tienen Pro. */
+/** Para el cron diario: sincroniza todas las cuentas conectadas de quienes tienen Plus. */
 export async function syncAll(d: Deps): Promise<{ accounts: number; added: number; errors: number }> {
   let added = 0;
   let errors = 0;

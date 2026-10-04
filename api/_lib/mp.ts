@@ -19,29 +19,38 @@ export const mpFetch: MpFetch = async (path, init) => {
   return json;
 };
 
-// ── Suscripción a Pro ──────────────────────────────────────────────────────
+// ── Suscripción a Parejo Plus ──────────────────────────────────────────────
 
-export function preapprovalBody(opts: { userId: string; email: string; priceArs: number; appUrl: string }) {
+export type Period = 'month' | 'year';
+
+export function preapprovalBody(opts: { userId: string; email: string; period: Period; priceArs: number; appUrl: string }) {
   return {
-    reason: 'Parejo Pro · plan anual',
+    reason: opts.period === 'year' ? 'Parejo Plus · anual' : 'Parejo Plus · mensual',
     external_reference: opts.userId,
     payer_email: opts.email,
-    auto_recurring: { frequency: 12, frequency_type: 'months', transaction_amount: opts.priceArs, currency_id: 'ARS' },
-    back_url: `${opts.appUrl.replace(/\/$/, '')}/pro?status=ok`,
+    auto_recurring: { frequency: opts.period === 'year' ? 12 : 1, frequency_type: 'months', transaction_amount: opts.priceArs, currency_id: 'ARS' },
+    back_url: `${opts.appUrl.replace(/\/$/, '')}/plus?status=ok`,
     status: 'pending',
   };
 }
 
-export type Preapproval = { id: string; status: string; external_reference?: string; next_payment_date?: string | null };
+export type Preapproval = {
+  id: string;
+  status: string;
+  external_reference?: string;
+  next_payment_date?: string | null;
+  auto_recurring?: { frequency?: number; frequency_type?: string } | null;
+};
 
 /**
- * Hasta cuándo queda Pro según la suscripción. Si está activa, hasta el próximo cobro (+3 días de gracia);
+ * Hasta cuándo queda Plus según la suscripción. Si está activa, hasta el próximo cobro (+3 días de gracia);
  * si se pausó o canceló, se respeta lo que ya pagó (devuelve null = no cambiar).
  */
 export function proUntilFor(pre: Preapproval, now: Date, current: string | null): string | null {
   if (pre.status !== 'authorized') return null;
   const next = pre.next_payment_date ? Date.parse(pre.next_payment_date) : NaN;
-  const until = Number.isNaN(next) ? now.getTime() + 365 * 86_400_000 : next + 3 * 86_400_000;
+  const months = pre.auto_recurring?.frequency_type === 'months' ? (pre.auto_recurring.frequency ?? 1) : 1;
+  const until = Number.isNaN(next) ? now.getTime() + Math.round(months * 30.5) * 86_400_000 : next + 3 * 86_400_000;
   const candidate = new Date(until).toISOString();
   return current && current > candidate ? current : candidate;
 }

@@ -9,8 +9,8 @@ import { formatMoney } from '@/domain/money';
 import { FREE_LIMITS, withinLimit } from '@/domain/plan';
 import { parseQuickExpense } from '@/domain/quick-add';
 import { useSpeech } from '@/features/speech';
-import { usePlan } from '@/pro/client';
-import { goPro } from '@/pro/gate';
+import { usePlan } from '@/plus/client';
+import { goPlus } from '@/plus/gate';
 import { useGroup, useStore } from '@/store';
 import { Pill, success } from '@/ui/bits';
 import { Button } from '@/ui/controls';
@@ -41,7 +41,7 @@ export default function QuickAdd() {
 
   const listen = () => {
     if (voice.listening) return voice.stop();
-    if (!withinLimit(plan, 'voicePerMonth', voiceUsed)) return goPro('voice');
+    if (!withinLimit(plan, 'voicePerMonth', voiceUsed)) return goPlus('voice');
     setText('');
     voice.start();
   };
@@ -112,7 +112,7 @@ export default function QuickAdd() {
           </T>
           {plan.tier === 'free' && (
             <T variant="caption" tone="secondary">
-              {Math.max(0, FREE_LIMITS.voicePerMonth - voiceUsed)} de {FREE_LIMITS.voicePerMonth} cargas por voz este mes · sin límite con Pro
+              {Math.max(0, FREE_LIMITS.voicePerMonth - voiceUsed)} de {FREE_LIMITS.voicePerMonth} dictados este mes · ilimitados con Plus
             </T>
           )}
           {voice.error && (

@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import { guessCategory } from '@/domain/categories';
 import { shortDate } from '@/domain/dates';
 import { formatMoney } from '@/domain/money';
-import { markInboxItem, syncMercadoPago, useMercadoPago, type InboxItem } from '@/pro/mercadopago';
+import { markInboxItem, syncMercadoPago, useMercadoPago, type InboxItem } from '@/plus/mercadopago';
 import { useGroup, useStore } from '@/store';
 import { EmptyState, notify, Pill, success } from '@/ui/bits';
 import { Button } from '@/ui/controls';

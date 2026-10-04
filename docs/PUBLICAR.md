@@ -25,7 +25,7 @@ npx eas-cli@latest init      # vincula el proyecto a tu cuenta de Expo
 
 ## 1. Web (instalable)
 
-Se publica en **Vercel** con `vercel.json` (web + funciones de pago). Paso a paso en [`VERCEL_Y_PRO.md`](VERCEL_Y_PRO.md).
+Se publica en **Vercel** con `vercel.json` (web + funciones de pago). Paso a paso en [`VERCEL_Y_PLUS.md`](VERCEL_Y_PLUS.md).
 
 ## 2. Android (Google Play)
 
@@ -60,7 +60,7 @@ En App Store Connect: ficha, capturas (6,9" y 6,5"), privacidad (email y datos f
 - [x] Fase 2: cuentas, sincronización e invitaciones.
 - [ ] Correr `002_sync.sql`, plantilla de mail con `{{ .Token }}` y SMTP propio (ver `SINCRONIZACION.md`).
 - [ ] Borrar la cuenta desde la app (requisito de Apple).
-- [ ] Compras dentro de la app para Pro en iOS/Android (RevenueCat); en la web se cobra con Mercado Pago.
+- [ ] Compras dentro de la app para Plus en iOS/Android (RevenueCat); en la web se cobra con Mercado Pago.
 - [ ] Política de privacidad y términos publicados.
 - [ ] Ícono y splash definitivos (hoy hay una versión inicial en `assets/images`).
 - [ ] Capturas y textos de las tiendas.

@@ -11,7 +11,7 @@ import { ExpenseRow, SettlementRow } from '@/features/expense-row';
 import { balanceHeadline, reminderMessage } from '@/features/phrases';
 import { useInvite } from '@/features/account';
 import { InstallBanner } from '@/features/install-banner';
-import { useMercadoPago } from '@/pro/mercadopago';
+import { useMercadoPago } from '@/plus/mercadopago';
 import { useGroup } from '@/store';
 import { syncEnabled } from '@/sync/runtime';
 import { Avatar, EmptyState, Pill, ProgressBar, shareText } from '@/ui/bits';
