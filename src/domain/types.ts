@@ -18,6 +18,8 @@ export type Member = {
   income?: number;
   /** Alias / CVU para recibir transferencias. */
   alias?: string;
+  /** Cuenta vinculada, si la persona ya usa Parejo en un grupo sincronizado. */
+  userId?: string;
 };
 
 /**
@@ -116,6 +118,8 @@ export type Group = {
   /** Cotización de referencia del dólar (ARS por USD) para cargar gastos en dólares. */
   usdRate: number;
   createdAt: number;
+  /** Presente si el grupo está en la nube y se sincroniza. */
+  remote?: { lastPulledAt: string | null };
 };
 
 export type Transfer = { from: string; to: string; amount: number };

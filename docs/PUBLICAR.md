@@ -12,7 +12,8 @@ Todo sale del mismo código. Se usa **EAS** (el servicio de Expo) para compilar 
 | Dominio (opcional) | variable | ej. `parejo.app` |
 
 Además vas a necesitar:
-- **Política de privacidad** publicada en una URL (las dos tiendas la piden). Hoy la app guarda los datos solo en el dispositivo; cuando sume sincronización, hay que actualizarla.
+- **Política de privacidad** publicada en una URL (las dos tiendas la piden). Tiene que decir que se guarda el email y los datos de los grupos en Supabase.
+- Las variables de Supabase cargadas en EAS (ver [`SINCRONIZACION.md`](SINCRONIZACION.md)).
 - **Capturas de pantalla** (`npm run web` + el navegador en tamaño celular sirve para un primer set).
 - Revisar el **identificador de la app** en `app.json` (`app.parejo` en iOS y Android). Una vez publicado no se puede cambiar.
 
@@ -49,7 +50,9 @@ npx eas-cli@latest build --platform ios --profile production   # EAS crea certif
 npx eas-cli@latest submit --platform ios                       # sube a App Store Connect / TestFlight
 ```
 
-En App Store Connect: ficha, capturas (6,9" y 6,5"), privacidad (“Datos no recopilados” mientras sea todo local) y enviar a revisión. Probar primero con **TestFlight**.
+En App Store Connect: ficha, capturas (6,9" y 6,5"), privacidad (email y datos financieros que carga el usuario, vinculados a su cuenta, sin rastreo) y enviar a revisión. Probar primero con **TestFlight**.
+
+> Apple pide que se pueda **borrar la cuenta desde la app** si la app permite crear cuentas. Está en la lista de pendientes.
 
 > Apple rechaza apps que son “una web metida en una app”. Parejo es una app nativa (React Native), así que no tiene ese problema.
 
@@ -60,7 +63,9 @@ En App Store Connect: ficha, capturas (6,9" y 6,5"), privacidad (“Datos no rec
 
 ## Checklist de lanzamiento
 
-- [ ] Fase 2 (cuentas + sincronización + invitación) — sin esto, cada uno ve solo lo suyo.
+- [x] Fase 2: cuentas, sincronización e invitaciones.
+- [ ] Correr `002_sync.sql`, plantilla de mail con `{{ .Token }}` y SMTP propio (ver `SINCRONIZACION.md`).
+- [ ] Borrar la cuenta desde la app (requisito de Apple).
 - [ ] Política de privacidad y términos publicados.
 - [ ] Ícono y splash definitivos (hoy hay una versión inicial en `assets/images`).
 - [ ] Capturas y textos de las tiendas.

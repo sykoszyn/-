@@ -5,8 +5,10 @@ import { StyleSheet, View } from 'react-native';
 import { makeMember } from '@/domain/demo';
 import { centsToInput, formatMoney, parseAmount } from '@/domain/money';
 import type { Group, Member } from '@/domain/types';
+import { AccountCard, useInvite } from '@/features/account';
 import { useGroup, useMaybeGroup, useStore } from '@/store';
-import { Avatar, confirm, Pill, shareText } from '@/ui/bits';
+import { leaveGroup, syncEnabled } from '@/sync/runtime';
+import { Avatar, confirm, notify, Pill, shareText } from '@/ui/bits';
 import { Button, Chip, Field, Label } from '@/ui/controls';
 import { Card, HStack, Row, Screen, Section, VStack } from '@/ui/layout';
 import { T } from '@/ui/text';
@@ -29,6 +31,12 @@ function SettingsBody({ group }: { group: Group }) {
 
   return (
     <Screen safeTop={false}>
+      {syncEnabled && (
+        <Section title="Cuenta">
+          <AccountCard group={group} />
+        </Section>
+      )}
+
       <Section title="Grupo">
         <Card>
           <VStack gap={Space.md}>
@@ -45,14 +53,16 @@ function SettingsBody({ group }: { group: Group }) {
                 if (rate > 0) updateGroup({ usdRate: rate });
               }}
             />
-            <VStack gap={Space.sm}>
-              <Label>¿Quién sos vos?</Label>
-              <HStack wrap>
-                {group.members.map((m) => (
-                  <Chip key={m.id} label={m.name} icon={m.emoji} selected={group.meId === m.id} onPress={() => updateGroup({ meId: m.id })} />
-                ))}
-              </HStack>
-            </VStack>
+            {!group.remote && (
+              <VStack gap={Space.sm}>
+                <Label>¿Quién sos vos?</Label>
+                <HStack wrap>
+                  {group.members.map((m) => (
+                    <Chip key={m.id} label={m.name} icon={m.emoji} selected={group.meId === m.id} onPress={() => updateGroup({ meId: m.id })} />
+                  ))}
+                </HStack>
+              </VStack>
+            )}
           </VStack>
         </Card>
       </Section>
@@ -86,7 +96,7 @@ function SettingsBody({ group }: { group: Group }) {
               key={g.id}
               icon={g.kind === 'couple' ? '💜' : g.kind === 'home' ? '🏠' : g.kind === 'trip' ? '✈️' : '✨'}
               title={g.name}
-              subtitle={g.members.map((m) => m.name).join(', ')}
+              subtitle={`${g.remote ? '☁️ ' : ''}${g.members.map((m) => m.name).join(', ')}`}
               right={g.id === group.id ? 'Activo' : undefined}
               rightTone="secondary"
               onPress={() => {
@@ -104,21 +114,46 @@ function SettingsBody({ group }: { group: Group }) {
         <Card>
           <VStack>
             <T variant="label" tone="secondary">
-              Por ahora todo se guarda solo en este dispositivo. Podés exportar una copia cuando quieras.
+              {group.remote
+                ? 'Este grupo se guarda en la nube. Igual podés exportar una copia cuando quieras.'
+                : 'Este grupo se guarda solo en este dispositivo. Podés exportar una copia cuando quieras.'}
             </T>
             <Button title="Exportar copia (JSON)" variant="secondary" small onPress={() => shareText(JSON.stringify(group, null, 2))} />
           </VStack>
         </Card>
-        <Button
-          title="Borrar este grupo"
-          variant="danger"
-          onPress={async () => {
-            if (await confirm(`¿Borrar "${group.name}"?`, 'Se borran todos sus gastos, fijos y metas. No se puede deshacer.')) {
-              deleteGroup(group.id);
-              router.dismissTo('/');
-            }
-          }}
-        />
+        {group.remote ? (
+          <Button
+            title="Salir de este grupo"
+            variant="danger"
+            onPress={async () => {
+              if (
+                await confirm(
+                  `¿Salir de "${group.name}"?`,
+                  'Dejás de verlo en tus dispositivos. Los demás lo siguen usando y vos seguís figurando en las cuentas.',
+                  'Salir',
+                )
+              ) {
+                try {
+                  await leaveGroup(group.id);
+                  router.dismissTo('/');
+                } catch (e) {
+                  notify('No se pudo salir del grupo', e instanceof Error ? e.message : String(e));
+                }
+              }
+            }}
+          />
+        ) : (
+          <Button
+            title="Borrar este grupo"
+            variant="danger"
+            onPress={async () => {
+              if (await confirm(`¿Borrar "${group.name}"?`, 'Se borran todos sus gastos, fijos y metas. No se puede deshacer.')) {
+                deleteGroup(group.id);
+                router.dismissTo('/');
+              }
+            }}
+          />
+        )}
       </Section>
       <T variant="caption" tone="secondary" center>
         Parejo · versión 1.0 · Hecho con 💜 en Argentina
@@ -134,6 +169,8 @@ function MemberCard({ member }: { member: Member }) {
   const [incomeText, setIncomeText] = useState(member.income ? centsToInput(member.income) : '');
   const [alias, setAlias] = useState(member.alias ?? '');
   const [open, setOpen] = useState(false);
+  const { invite, busy } = useInvite();
+  const isMe = member.id === group.meId;
 
   return (
     <Card>
@@ -150,6 +187,15 @@ function MemberCard({ member }: { member: Member }) {
         </View>
         {!open && <Button title="Editar" small variant="ghost" onPress={() => setOpen(true)} />}
       </HStack>
+      {syncEnabled && !isMe && (
+        <HStack style={styles.mt}>
+          {member.userId ? (
+            <Pill tone="positive" label="✓ Usa Parejo en su celular" />
+          ) : (
+            <Button title={`Invitar a ${member.name}`} icon="💌" small variant="secondary" loading={busy} onPress={() => invite(group, member)} />
+          )}
+        </HStack>
+      )}
       {open && (
         <VStack gap={Space.md} style={styles.mt}>
           <HStack wrap>

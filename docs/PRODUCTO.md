@@ -43,14 +43,14 @@ Todo lo de arriba está implementado y funcionando en web, iOS y Android desde u
 - Modo claro y oscuro.
 - Lógica de dominio pura y testeada (`src/domain`): reparto sin perder centavos, cuotas, saldos, simplificación de deudas, fijos, metas y resúmenes.
 
-**Limitación importante:** hoy los datos viven **en el dispositivo**. Para que los dos miembros de la pareja vean lo mismo desde sus celulares hace falta la fase 2 (sincronización). El esquema de base de datos ya está diseñado en [`supabase/schema.sql`](../supabase/schema.sql).
+- **Juntos de verdad (fase 2, hecha):** entrar con código por email, invitar a la pareja por link, sincronización en tiempo real entre celulares y web, y uso sin conexión. Detalle en [`SINCRONIZACION.md`](SINCRONIZACION.md).
 
 ## Hoja de ruta
 
-### Fase 2 — Juntos de verdad (lo próximo, imprescindible para lanzar)
-- Cuentas de usuario (Supabase Auth: Google, Apple, email) e **invitación por link** a la pareja o al grupo.
-- Sincronización en tiempo real con soporte offline (las escrituras locales se suben al volver la conexión).
-- Notificaciones push: “Sofi cargó Súper $45.000”, “Mañana vence la luz”, “Ya pueden saldar el mes”.
+### Fase 2 — Juntos de verdad ✅
+- ✅ Cuentas con código por email e **invitación por link** a la pareja o al grupo.
+- ✅ Sincronización en tiempo real con soporte offline.
+- Pendiente: entrar con Google/Apple, links que abran la app instalada y notificaciones push (“Sofi cargó Súper $45.000”, “Mañana vence la luz”, “Ya pueden saldar el mes”).
 
 ### Fase 3 — Lo que nos hace distintos
 - **Cotización automática** del dólar (blue/MEP/tarjeta) al cargar en USD.

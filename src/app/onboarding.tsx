@@ -6,6 +6,7 @@ import { makeMember } from '@/domain/demo';
 import { parseAmount } from '@/domain/money';
 import type { GroupKind } from '@/domain/types';
 import { useStore } from '@/store';
+import { syncEnabled } from '@/sync/runtime';
 import { Button, ChipGroup, Field, Label } from '@/ui/controls';
 import { Card, Screen, VStack } from '@/ui/layout';
 import { T } from '@/ui/text';
@@ -66,6 +67,12 @@ export default function Onboarding() {
               router.replace('/');
             }}
           />
+          {syncEnabled && (
+            <>
+              <Button title="Me invitaron a un grupo" variant="ghost" onPress={() => router.push('/join')} />
+              <Button title="Ya tengo cuenta" variant="ghost" onPress={() => router.push('/login')} />
+            </>
+          )}
           {hasGroups && <Button title="Volver" variant="ghost" onPress={() => router.back()} />}
         </VStack>
       </Screen>

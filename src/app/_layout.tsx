@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useHydrated } from '@/store';
+import { SyncManager } from '@/sync/runtime';
 import { Colors } from '@/ui/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -29,6 +30,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={theme}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <SyncManager />
       <Stack
         screenOptions={{
           headerShadowVisible: false,
@@ -45,6 +47,9 @@ export default function RootLayout() {
         <Stack.Screen name="goal/edit" options={{ presentation: 'modal', title: 'Meta' }} />
         <Stack.Screen name="goal/[id]" options={{ title: 'Meta' }} />
         <Stack.Screen name="settings" options={{ title: 'Ajustes' }} />
+        <Stack.Screen name="login" options={{ presentation: 'modal', title: 'Entrar' }} />
+        <Stack.Screen name="join/index" options={{ title: 'Unirme a un grupo' }} />
+        <Stack.Screen name="join/[code]" options={{ title: 'Invitación' }} />
       </Stack>
     </ThemeProvider>
   );

@@ -8,7 +8,9 @@ import { balances, memberById, pendingInstallments, simplifyDebts } from '@/doma
 import { formatMoney } from '@/domain/money';
 import { ExpenseRow, SettlementRow } from '@/features/expense-row';
 import { balanceHeadline, reminderMessage } from '@/features/phrases';
+import { useInvite } from '@/features/account';
 import { useGroup } from '@/store';
+import { syncEnabled } from '@/sync/runtime';
 import { Avatar, EmptyState, Pill, ProgressBar, shareText } from '@/ui/bits';
 import { Button } from '@/ui/controls';
 import { Card, HStack, Row, Screen, Section, VStack } from '@/ui/layout';
@@ -42,6 +44,8 @@ export default function Home() {
   }, [group, month, todayISO]);
 
   const { headline, transfers } = data;
+  const { invite, busy: inviting } = useInvite();
+  const notInvited = group.members.find((m) => m.id !== group.meId && !m.userId);
   const myIncoming = transfers.find((t) => t.to === group.meId);
   const pendingBills = data.bills.filter((b) => b.state !== 'paid');
   const delta = data.summary.previousTotal > 0 ? (data.summary.total - data.summary.previousTotal) / data.summary.previousTotal : null;
@@ -98,6 +102,18 @@ export default function Home() {
       </Card>
 
       <Button title="Cargar gasto" icon="＋" onPress={() => router.push('/expense/new')} />
+
+      {syncEnabled && notInvited && (
+        <Card tone="primarySoft">
+          <VStack>
+            <T bold>💌 {notInvited.name} todavía no ve estas cuentas</T>
+            <T variant="label" tone="secondary">
+              Mandale una invitación y carguen desde sus celulares: todo se sincroniza solo.
+            </T>
+            <Button title={`Invitar a ${notInvited.name}`} small loading={inviting} onPress={() => invite(group, notInvited)} style={styles.inviteButton} />
+          </VStack>
+        </Card>
+      )}
 
       {/* Fijos */}
       {group.bills.length > 0 && (
@@ -198,4 +214,5 @@ const styles = StyleSheet.create({
   heroActions: { marginTop: Space.sm, flexWrap: 'wrap' },
   between: { justifyContent: 'space-between' },
   mt: { marginTop: Space.sm },
+  inviteButton: { alignSelf: 'flex-start', marginTop: Space.xs },
 });

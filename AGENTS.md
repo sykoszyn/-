@@ -45,6 +45,8 @@ Docs: https://docs.expo.dev/eas/index.md
 - La lógica de negocio vive en `src/domain` (TypeScript puro, sin React). Todo cálculo de plata va ahí y lleva test en `src/domain/__tests__` (`npm test`, con vitest).
 - Montos siempre en centavos enteros; repartir con `allocate()` para no perder centavos.
 - Estado global en `src/store` (zustand + AsyncStorage). Las pantallas leen el grupo activo con `useGroup()`.
+- Toda acción del store que cambia un grupo pasa a `mutate()` la lista de filas tocadas (`[tabla, id, borrado?]`): así se sincroniza. Si sumás un campo, actualizá `src/sync/mappers.ts` y una migración nueva en `supabase/migrations/` (nunca editar una ya corrida).
+- `src/sync/engine.ts` no depende de React ni de Supabase: se prueba con `FakeServer` (`src/sync/__tests__`). Con `PAREJO_TEST_PG` también corre la prueba contra Postgres real.
 - UI: usar los componentes de `src/ui` y los colores de `useTheme()`; no hardcodear colores.
 - Textos de la app en español rioplatense (vos).
 - Antes de terminar: `npm run check`.

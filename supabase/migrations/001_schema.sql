@@ -1,6 +1,6 @@
--- Parejo · esquema para sincronizar entre dispositivos (fase 2).
--- Pensado para Supabase (Postgres + Auth + Realtime). La app hoy guarda todo
--- localmente; este esquema refleja 1:1 los tipos de `src/domain/types.ts`.
+-- Parejo · migración 1: esquema para sincronizar entre dispositivos.
+-- Pensado para Supabase (Postgres + Auth + Realtime). La app guarda primero en el
+-- teléfono y sincroniza contra estas tablas, que reflejan los tipos de `src/domain/types.ts`.
 -- Montos: enteros en centavos. Fechas de negocio: `date`.
 
 create extension if not exists "pgcrypto";
@@ -23,7 +23,7 @@ create table members (
   name text not null,
   emoji text not null default '🦊',
   color text not null default '#5B4CF0',
-  income bigint,          -- privado: ver política más abajo
+  income bigint,          -- lo ven los miembros del grupo (se usa para dividir según ingresos)
   alias text,
   created_at timestamptz not null default now(),
   unique (group_id, user_id)
@@ -145,8 +145,5 @@ create policy "miembros" on goal_contributions for all
   with check (is_member((select group_id from goals where goals.id = goal_id)));
 create policy "miembros" on invites for all using (is_member(group_id)) with check (is_member(group_id));
 
--- PENDIENTE (fase 2): con estas políticas, nadie puede insertar el primer
--- miembro de un grupo nuevo ni sumarse por invitación. Hay que escribir dos
--- funciones `security definer`: create_group(...) que crea el grupo y su primer
--- miembro con user_id = auth.uid(), y accept_invite(code) que valida el código
--- y asigna user_id al miembro invitado. Así no se abre el insert de `members`.
+-- Crear un grupo y sumarse por invitación se hace con funciones `security definer`
+-- (create_group, accept_invite) que están en 002_sync.sql.

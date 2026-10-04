@@ -6,12 +6,16 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { demoGroup } from '@/domain/demo';
 import { newId } from '@/domain/id';
 import type { Bill, Expense, Goal, GoalContribution, Group, Member, Settlement } from '@/domain/types';
+import { track, type Change } from '@/sync/outbox';
+import type { Outbox } from '@/sync/types';
 
 type Draft<T extends { id: string; createdAt: number }> = Omit<T, 'id' | 'createdAt'>;
 
 type State = {
   groups: Record<string, Group>;
   activeGroupId: string | null;
+  /** Cambios de grupos sincronizados que todavía no se subieron. */
+  outbox: Outbox;
 
   createGroup: (group: Omit<Group, 'id' | 'createdAt' | 'expenses' | 'settlements' | 'bills' | 'goals'>) => string;
   loadDemo: () => void;
@@ -37,16 +41,18 @@ type State = {
 export const useStore = create<State>()(
   persist(
     (set, get) => {
-      /** Aplica un cambio inmutable al grupo activo. */
-      const mutate = (fn: (g: Group) => Group) => {
-        const { activeGroupId, groups } = get();
+      /** Aplica un cambio inmutable al grupo activo y, si está en la nube, anota qué subir. */
+      const mutate = (fn: (g: Group) => Group, changes: Change[] = []) => {
+        const { activeGroupId, groups, outbox } = get();
         if (!activeGroupId || !groups[activeGroupId]) return;
-        set({ groups: { ...groups, [activeGroupId]: fn(groups[activeGroupId]) } });
+        const group = fn(groups[activeGroupId]);
+        set({ groups: { ...groups, [activeGroupId]: group }, outbox: track(outbox, group, changes) });
       };
 
       return {
         groups: {},
         activeGroupId: null,
+        outbox: {},
 
         createGroup: (data) => {
           const id = newId();
@@ -64,12 +70,14 @@ export const useStore = create<State>()(
             const groups = { ...s.groups };
             delete groups[id];
             const activeGroupId = s.activeGroupId === id ? (Object.keys(groups)[0] ?? null) : s.activeGroupId;
-            return { groups, activeGroupId };
+            const outbox = Object.fromEntries(Object.entries(s.outbox).filter(([, op]) => op.groupId !== id));
+            return { groups, activeGroupId, outbox };
           }),
-        updateGroup: (patch) => mutate((g) => ({ ...g, ...patch })),
+        updateGroup: (patch) =>
+          mutate((g) => ({ ...g, ...patch }), 'name' in patch || 'usdRate' in patch ? [['groups', get().activeGroupId!]] : []),
         updateMember: (id, patch) =>
-          mutate((g) => ({ ...g, members: g.members.map((m) => (m.id === id ? { ...m, ...patch } : m)) })),
-        addMember: (member) => mutate((g) => ({ ...g, members: [...g.members, member] })),
+          mutate((g) => ({ ...g, members: g.members.map((m) => (m.id === id ? { ...m, ...patch } : m)) }), [['members', id]]),
+        addMember: (member) => mutate((g) => ({ ...g, members: [...g.members, member] }), [['members', member.id]]),
 
         saveExpense: ({ id, ...data }) => {
           const expenseId = id ?? newId();
@@ -82,21 +90,26 @@ export const useStore = create<State>()(
                 ? g.expenses.map((e) => (e.id === expenseId ? expense : e))
                 : [...g.expenses, expense],
             };
-          });
+          }, [['expenses', expenseId]]);
           return expenseId;
         },
-        deleteExpense: (id) => mutate((g) => ({ ...g, expenses: g.expenses.filter((e) => e.id !== id) })),
-        addSettlement: (data) =>
-          mutate((g) => ({ ...g, settlements: [...g.settlements, { ...data, id: newId(), createdAt: Date.now() }] })),
-        deleteSettlement: (id) => mutate((g) => ({ ...g, settlements: g.settlements.filter((s) => s.id !== id) })),
+        deleteExpense: (id) => mutate((g) => ({ ...g, expenses: g.expenses.filter((e) => e.id !== id) }), [['expenses', id, true]]),
+        addSettlement: (data) => {
+          const id = newId();
+          mutate((g) => ({ ...g, settlements: [...g.settlements, { ...data, id, createdAt: Date.now() }] }), [['settlements', id]]);
+        },
+        deleteSettlement: (id) =>
+          mutate((g) => ({ ...g, settlements: g.settlements.filter((s) => s.id !== id) }), [['settlements', id, true]]),
 
-        saveBill: ({ id, ...data }) =>
+        saveBill: ({ id, ...data }) => {
+          const billId = id ?? newId();
           mutate((g) => {
-            const existing = g.bills.find((b) => b.id === id);
-            const bill: Bill = { ...data, id: id ?? newId(), createdAt: existing?.createdAt ?? Date.now() };
-            return { ...g, bills: existing ? g.bills.map((b) => (b.id === id ? bill : b)) : [...g.bills, bill] };
-          }),
-        deleteBill: (id) => mutate((g) => ({ ...g, bills: g.bills.filter((b) => b.id !== id) })),
+            const existing = g.bills.find((b) => b.id === billId);
+            const bill: Bill = { ...data, id: billId, createdAt: existing?.createdAt ?? Date.now() };
+            return { ...g, bills: existing ? g.bills.map((b) => (b.id === billId ? bill : b)) : [...g.bills, bill] };
+          }, [['bills', billId]]);
+        },
+        deleteBill: (id) => mutate((g) => ({ ...g, bills: g.bills.filter((b) => b.id !== id) }), [['bills', id, true]]),
 
         saveGoal: ({ id, ...data }) => {
           const goalId = id ?? newId();
@@ -109,24 +122,33 @@ export const useStore = create<State>()(
               createdAt: existing?.createdAt ?? Date.now(),
             };
             return { ...g, goals: existing ? g.goals.map((x) => (x.id === goalId ? goal : x)) : [...g.goals, goal] };
-          });
+          }, [['goals', goalId]]);
           return goalId;
         },
-        deleteGoal: (id) => mutate((g) => ({ ...g, goals: g.goals.filter((x) => x.id !== id) })),
-        contribute: (goalId, contribution) =>
-          mutate((g) => ({
-            ...g,
-            goals: g.goals.map((x) =>
-              x.id === goalId ? { ...x, contributions: [...x.contributions, { ...contribution, id: newId() }] } : x,
-            ),
-          })),
+        deleteGoal: (id) => mutate((g) => ({ ...g, goals: g.goals.filter((x) => x.id !== id) }), [['goals', id, true]]),
+        contribute: (goalId, contribution) => {
+          const id = newId();
+          mutate(
+            (g) => ({
+              ...g,
+              goals: g.goals.map((x) => (x.id === goalId ? { ...x, contributions: [...x.contributions, { ...contribution, id }] } : x)),
+            }),
+            [['goal_contributions', id]],
+          );
+        },
       };
     },
     {
       name: 'parejo-v1',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ groups: s.groups, activeGroupId: s.activeGroupId }),
+      partialize: (s) => ({ groups: s.groups, activeGroupId: s.activeGroupId, outbox: s.outbox }),
+      // v1 → v2: aparece la cola de cambios para sincronizar.
+      migrate: (persisted, version) => {
+        const state = (persisted ?? {}) as Partial<State>;
+        if (version < 2) return { ...state, outbox: {} } as State;
+        return state as State;
+      },
     },
   ),
 );
